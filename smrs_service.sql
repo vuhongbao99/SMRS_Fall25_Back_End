@@ -27,7 +27,7 @@ CREATE TABLE `blogs` (
   `topic_id` int NOT NULL,
   `blog_title` varchar(255) NOT NULL,
   `blog_content` text NOT NULL,
-  `publication_type` enum('Public','Private') NOT NULL,
+  `visibility` enum('Public','Private') NOT NULL,
   `created_at` date DEFAULT (curdate()),
   PRIMARY KEY (`blog_id`),
   KEY `topic_id` (`topic_id`),
@@ -54,8 +54,8 @@ DROP TABLE IF EXISTS `comments`;
 CREATE TABLE `comments` (
   `comment_id` int NOT NULL AUTO_INCREMENT,
   `blog_id` int NOT NULL,
-  `lecturer_id` int NOT NULL,
-  `student_id` int NOT NULL,
+  `lecturer_id` int DEFAULT NULL,
+  `student_id` int DEFAULT NULL,
   `content` text NOT NULL,
   `created_at` date DEFAULT (curdate()),
   PRIMARY KEY (`comment_id`),
@@ -140,6 +140,8 @@ CREATE TABLE `lecturers` (
   `full_name` varchar(100) NOT NULL,
   `lecturer_code` varchar(50) NOT NULL,
   `department` varchar(100) DEFAULT NULL,
+  `avatar_url` varchar(255) DEFAULT NULL,
+  `phone` varchar(12) DEFAULT NULL,
   PRIMARY KEY (`lecturer_id`),
   UNIQUE KEY `lecturer_code` (`lecturer_code`),
   CONSTRAINT `lecturers_ibfk_1` FOREIGN KEY (`lecturer_id`) REFERENCES `users` (`user_id`)
@@ -153,36 +155,6 @@ CREATE TABLE `lecturers` (
 LOCK TABLES `lecturers` WRITE;
 /*!40000 ALTER TABLE `lecturers` DISABLE KEYS */;
 /*!40000 ALTER TABLE `lecturers` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `mentorships`
---
-
-DROP TABLE IF EXISTS `mentorships`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `mentorships` (
-  `mentorship_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `lecturer_id` int NOT NULL,
-  `invitation_status` enum('Pending','Accepted','Rejected') DEFAULT 'Pending',
-  `accepted_date` date DEFAULT NULL,
-  PRIMARY KEY (`mentorship_id`),
-  KEY `topic_id` (`topic_id`),
-  KEY `lecturer_id` (`lecturer_id`),
-  CONSTRAINT `mentorships_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`),
-  CONSTRAINT `mentorships_ibfk_2` FOREIGN KEY (`lecturer_id`) REFERENCES `lecturers` (`lecturer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `mentorships`
---
-
-LOCK TABLES `mentorships` WRITE;
-/*!40000 ALTER TABLE `mentorships` DISABLE KEYS */;
-/*!40000 ALTER TABLE `mentorships` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -278,8 +250,10 @@ CREATE TABLE `students` (
   `full_name` varchar(100) NOT NULL,
   `student_code` varchar(50) NOT NULL,
   `major` varchar(100) DEFAULT NULL,
-  `class` varchar(50) DEFAULT NULL,
+  `classes` varchar(50) DEFAULT NULL,
   `faculty` varchar(100) DEFAULT NULL,
+  `avatar_url` varchar(255) DEFAULT NULL,
+  `phone` varchar(12) DEFAULT NULL,
   PRIMARY KEY (`student_id`),
   UNIQUE KEY `student_code` (`student_code`),
   CONSTRAINT `students_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `users` (`user_id`)
@@ -303,6 +277,7 @@ DROP TABLE IF EXISTS `topic_evaluations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `topic_evaluations` (
+  `evaluation_id` int NOT NULL AUTO_INCREMENT,
   `topic_id` int NOT NULL,
   `council_id` int NOT NULL,
   `reviewer_id` int NOT NULL,
@@ -310,7 +285,8 @@ CREATE TABLE `topic_evaluations` (
   `result` enum('Passed','Failed','NeedsRevision') NOT NULL,
   `comments` text,
   `evaluation_date` date NOT NULL,
-  PRIMARY KEY (`topic_id`,`council_id`),
+  PRIMARY KEY (`evaluation_id`),
+  KEY `topic_id` (`topic_id`),
   KEY `council_id` (`council_id`),
   KEY `reviewer_id` (`reviewer_id`),
   CONSTRAINT `topic_evaluations_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`),
@@ -329,38 +305,6 @@ LOCK TABLES `topic_evaluations` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `topic_members`
---
-
-DROP TABLE IF EXISTS `topic_members`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `topic_members` (
-  `topic_member_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `lecturer_id` int NOT NULL,
-  `student_id` int NOT NULL,
-  `member_role` enum('GroupLeader','Member','Mentor') NOT NULL,
-  PRIMARY KEY (`topic_member_id`),
-  KEY `topic_id` (`topic_id`),
-  KEY `lecturer_id` (`lecturer_id`),
-  KEY `student_id` (`student_id`),
-  CONSTRAINT `topic_members_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`),
-  CONSTRAINT `topic_members_ibfk_2` FOREIGN KEY (`lecturer_id`) REFERENCES `lecturers` (`lecturer_id`),
-  CONSTRAINT `topic_members_ibfk_3` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `topic_members`
---
-
-LOCK TABLES `topic_members` WRITE;
-/*!40000 ALTER TABLE `topic_members` DISABLE KEYS */;
-/*!40000 ALTER TABLE `topic_members` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `topics`
 --
 
@@ -371,16 +315,19 @@ CREATE TABLE `topics` (
   `topic_id` int NOT NULL AUTO_INCREMENT,
   `topic_title` varchar(255) NOT NULL,
   `topic_description` text,
-  `lecturer_id` int DEFAULT NULL,
-  `student_id` int DEFAULT NULL,
-  `approval_status` enum('Pending','Approved','Rejected') NOT NULL,
+  `lecturer_id` int NOT NULL,
+  `mentor_id` int DEFAULT NULL,
+  `student_id` int NOT NULL,
+  `approval_status` enum('Pending','Approved','Rejected') DEFAULT 'Pending',
   `rejection_reason` text,
   `created_date` date NOT NULL,
   PRIMARY KEY (`topic_id`),
+  UNIQUE KEY `student_id` (`student_id`),
   KEY `lecturer_id` (`lecturer_id`),
-  KEY `student_id` (`student_id`),
+  KEY `mentor_id` (`mentor_id`),
   CONSTRAINT `topics_ibfk_1` FOREIGN KEY (`lecturer_id`) REFERENCES `lecturers` (`lecturer_id`),
-  CONSTRAINT `topics_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`)
+  CONSTRAINT `topics_ibfk_2` FOREIGN KEY (`mentor_id`) REFERENCES `lecturers` (`lecturer_id`),
+  CONSTRAINT `topics_ibfk_3` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -404,6 +351,7 @@ CREATE TABLE `users` (
   `user_id` int NOT NULL AUTO_INCREMENT,
   `user_name` varchar(100) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `user_status` enum('Active','Inactive') DEFAULT 'Active',
   `role_id` int NOT NULL,
   PRIMARY KEY (`user_id`),
   KEY `role_id` (`role_id`),
@@ -429,4 +377,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-09-26  9:56:38
+-- Dump completed on 2025-09-30 10:44:21
