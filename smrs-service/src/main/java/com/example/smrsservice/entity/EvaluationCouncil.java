@@ -1,35 +1,23 @@
 package com.example.smrsservice.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
 @Entity
-@Table(name = "evaluation_councils")
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(name = "evaluation_council")
+@NoArgsConstructor @AllArgsConstructor @Getter @Setter @Builder
 public class EvaluationCouncil {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer councilId;
 
-    @Column(name = "council_name")
+    @Column(nullable = false)
     private String councilName;
 
-    @Column(name = "established_date")
-    private LocalDate establishedDate ;
+    @Column(nullable = false)
+    private LocalDate establishedDate;
 
-    @OneToMany(mappedBy = "council")
-    private Set<CouncilMember> members;
-
-    @OneToMany(mappedBy = "council")
-    private Set<TopicEvaluation> evaluations;
+    @OneToMany(mappedBy = "council", fetch = FetchType.LAZY)
+    private List<CouncilMember> members;
 }

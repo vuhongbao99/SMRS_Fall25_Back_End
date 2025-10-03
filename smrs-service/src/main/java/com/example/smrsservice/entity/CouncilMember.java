@@ -9,26 +9,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "council_members")
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(name = "council_member")
+@NoArgsConstructor @AllArgsConstructor @Getter @Setter
 public class CouncilMember {
     @EmbeddedId
     private CouncilMemberId id;
 
-    @ManyToOne
-    @MapsId("councilId")
+    @ManyToOne @MapsId("councilId")
     @JoinColumn(name = "council_id")
     private EvaluationCouncil council;
 
-    @ManyToOne
-    @MapsId("lecturerId")
+    @ManyToOne @MapsId("lecturerId")
     @JoinColumn(name = "lecturer_id")
-    private Lecturer lecturer ;
+    private Lecturer lecturer;
 
-    @Enumerated(EnumType.STRING)
-    private MemberRole memberRole ;
-
+    @Column(name = "member_role", nullable = false)
+    private String memberRole; // 'Chairman','Secretary','Reviewer' (có thể chuyển sang enum nếu thầy muốn)
 }

@@ -1,37 +1,32 @@
 package com.example.smrsservice.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Table(name = "lecturers")
+@Table(name = "lecturer")
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder
 public class Lecturer {
     @Id
-    private Integer lecturerId;
+    @Column(name = "lecturer_id")
+    private Integer lecturerId; // = userId
 
     @OneToOne
     @MapsId
     @JoinColumn(name = "lecturer_id")
     private User user;
 
-    @Column(name = "full_name")
-    private String fullName ;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
-    @Column(name = "lecturer_code")
-    private String lecturerCode ;
-    private String department ;
+    @Column(name = "lecturer_code", unique = true, nullable = false)
+    private String lecturerCode;
 
-    @Column(name = "avatar_url")
-    private String avatar_url;
-
+    private String department;
+    private String avatarUrl;
     private String phone;
-
-
 }
