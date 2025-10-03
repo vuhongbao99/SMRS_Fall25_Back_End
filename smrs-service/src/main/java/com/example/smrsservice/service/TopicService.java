@@ -9,7 +9,11 @@ import com.example.smrsservice.repository.StudentRepository;
 import com.example.smrsservice.repository.TopicRepository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,4 +37,22 @@ public class TopicService {
 
         return topicMapper.toTopicCreateByStudentResponse(savedTopic);
     }
+
+    public Topic getTopicByStudentId(Integer studentId) {
+        return topicRepository.findByStudent_StudentId(studentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đề tài cho studentId=" + studentId));
+    }
+
+    public List<Student> getRegisteredStudents() {
+        return topicRepository.findAllRegisteredStudents();
+    }
+    public Page<Student> getRegisteredStudents(Pageable pageable) {
+        return (Page<Student>) topicRepository.findAllRegisteredStudents(pageable);
+    }
+
+    public List<Topic> findAll(){
+        return topicRepository.findAll();
+    }
+
+
 }
