@@ -1,34 +1,25 @@
 package com.example.smrsservice.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "role")
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "role_id")
     private Integer roleId;
 
-    @Column(name = "role_name")
+    @Column(name = "role_name", nullable = false, unique = true)
     private String roleName;
 
-    @Column(name = "create_date")
-    private LocalDate createDate;
-
-    @OneToMany(mappedBy = "role",cascade = CascadeType.ALL,orphanRemoval = true)
-    Set<User> listUser;
-
-
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    private List<User> users;
 }

@@ -1,38 +1,29 @@
 package com.example.smrsservice.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import java.time.LocalDateTime;
 
-import java.time.LocalDate;
 @Entity
-@Table(name = "comments")
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(name = "comment")
+@NoArgsConstructor @AllArgsConstructor @Getter @Setter @Builder
 public class Comment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer commentId;
 
-    @ManyToOne
-    @JoinColumn(name = "topic_id")
+    @ManyToOne @JoinColumn(name = "blog_id", nullable = false)
     private Blog blog;
 
-    @ManyToOne
-    @JoinColumn(name = "lecturer_id")
+    // Một trong hai có thể null
+    @ManyToOne @JoinColumn(name = "lecturer_id")
     private Lecturer lecturer;
 
-    @ManyToOne
-    @JoinColumn(name = "student_id")
+    @ManyToOne @JoinColumn(name = "student_id")
     private Student student;
 
-    @Column(name = "content")
+    @Lob
     private String content;
 
     @Column(name = "created_at")
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 }

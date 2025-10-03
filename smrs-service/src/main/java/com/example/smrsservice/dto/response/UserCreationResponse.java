@@ -1,13 +1,14 @@
 package com.example.smrsservice.dto.response;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserCreationResponse {
     private String email;
-    private  Integer roleId;
+    private String firstName;
+    private String lastName;
 }

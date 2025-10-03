@@ -1,47 +1,55 @@
 package com.example.smrsservice.entity;
 
+import com.example.smrsservice.common.ApprovalFlow;
 import com.example.smrsservice.common.ApprovalStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-import java.time.LocalDate;
 @Entity
-@Table(name = "topics")
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(name = "topic")
+@NoArgsConstructor @AllArgsConstructor @Getter @Setter @Builder
 public class Topic {
-    @Id
-    private Integer topic_id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer topicId;
 
-    @Column(name = "topic_title")
+    @Column(nullable = false)
     private String topicTitle;
 
-    @Column(name = "topic_description")
+    @Lob
     private String topicDescription;
 
-    @ManyToOne
-    @JoinColumn(name = "lecturer_id")
+    // GV hướng dẫn chính
+    @ManyToOne @JoinColumn(name = "lecturer_id", nullable = false)
     private Lecturer lecturer;
 
-    @ManyToOne
-    @JoinColumn(name = "mentor_id")
+    // GV hỗ trợ (nullable)
+    @ManyToOne @JoinColumn(name = "mentor_id")
     private Lecturer mentor;
 
+    // Mỗi SV chỉ có 1 topic (unique ở DB)
     @OneToOne
-    @JoinColumn(name = "student_id", unique = true)
+    @JoinColumn(name = "student_id", unique = true, nullable = false)
     private Student student;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, columnDefinition =  "varchar(20) default 'PENDING' ")
     private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 
-    @Column(name = "rejection_reason")
+    private ApprovalFlow approvalFlow ;
+
     private String rejectionReason;
 
-    @Column(name = "created_date")
-    private LocalDate createdDate ;
+    @Column(name = "created_date", nullable = false)
+    private java.time.LocalDate createdDate;
+
+    // điểm (final_score là generated ở DB → read-only trong JPA)
+    @Column(name = "mentor_score")  private BigDecimal mentorScore;
+    @Column(name = "council_score") private BigDecimal councilScore;
+
+    @Column(name = "final_score", insertable = false, updatable = false)
+    private BigDecimal finalScore; // DB tự tính 0.4/0.6
+
+    // nếu thầy có thêm approval_flow/approved_at ở DB mới, có thể khai báo thêm tại đây
 }

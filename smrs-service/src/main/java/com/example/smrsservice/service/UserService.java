@@ -6,6 +6,7 @@ import com.example.smrsservice.dto.response.UserCreationResponse;
 import com.example.smrsservice.dto.response.UserDetailResponse;
 import com.example.smrsservice.dto.response.UserSearchResponse;
 import com.example.smrsservice.entity.User;
+import com.example.smrsservice.mapper.UserMapper;
 import com.example.smrsservice.repository.UserRepository;
 import lombok.AllArgsConstructor;
 
@@ -25,6 +26,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     public UserCreationResponse createUser(UserCreationRequest request){
         if (userRepository.existsByEmail(request.getEmail())){
@@ -32,16 +34,13 @@ public class UserService {
         }
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-         User user = User.builder()
-                 .email(request.getEmail())
-                 .passwordHash(passwordEncoder.encode(request.getPasswordHash()))
-                 .build();
+         User user = userMapper.toUser(request);
+         user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+
 
         userRepository.save(user);
 
-        return UserCreationResponse.builder()
-                .email(request.getEmail())
-                .build();
+        return userMapper.toUserResponse(user);
 
     }
 
