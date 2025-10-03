@@ -2,6 +2,7 @@ package com.example.smrsservice.dto.response;
 
 import com.example.smrsservice.common.ApprovalFlow;
 import com.example.smrsservice.common.ApprovalStatus;
+import com.example.smrsservice.entity.Student;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -14,8 +15,8 @@ public class TopicCreateByStudentResponse {
     private Integer topicId;
     private String topicTitle;
     private String topicDescription;
-    private String studentName;
+    private Student student;
     private ApprovalFlow approvalFlow;
     private ApprovalStatus approvalStatus;
-    private LocalDate createdDate;
+    private LocalDate createdAt;
 }

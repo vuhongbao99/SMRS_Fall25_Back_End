@@ -20,6 +20,8 @@ public class TopicController {
 
     @PostMapping("/student")
     ResponseEntity<TopicCreateByStudentResponse> createByStudent(@RequestBody @Valid CreateTopicByStudentRequest request){
+        // Student currentStudent = user dang dang nhap;
+        // kiem tra xem co ton tai topic nao chua hoan thanh khong
         return ResponseEntity.status(HttpStatus.CREATED).body(topicService.createByStudent(request));
     }
 }

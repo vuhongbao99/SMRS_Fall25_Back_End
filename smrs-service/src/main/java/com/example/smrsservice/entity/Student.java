@@ -16,8 +16,7 @@ public class Student {
     private Integer studentId; // = userId
 
     @OneToOne
-    @MapsId
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "full_name", nullable = false)

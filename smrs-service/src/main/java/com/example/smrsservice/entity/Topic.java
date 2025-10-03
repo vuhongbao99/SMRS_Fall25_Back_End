@@ -21,28 +21,21 @@ public class Topic {
     private String topicDescription;
 
     // GV hướng dẫn chính
-    @ManyToOne @JoinColumn(name = "lecturer_id", nullable = false)
+    @ManyToOne @JoinColumn(name = "lecturer_id")
     private Lecturer lecturer;
 
-    // GV hỗ trợ (nullable)
-    @ManyToOne @JoinColumn(name = "mentor_id")
-    private Lecturer mentor;
-
     // Mỗi SV chỉ có 1 topic (unique ở DB)
-    @OneToOne
-    @JoinColumn(name = "student_id", unique = true, nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "approval_status", nullable = false, columnDefinition =  "varchar(20) default 'PENDING' ")
+    @Column(name = "approval_status", columnDefinition =  "varchar(20) default 'PENDING' ")
     private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 
     private ApprovalFlow approvalFlow ;
 
     private String rejectionReason;
-
-    @Column(name = "created_date", nullable = false)
-    private java.time.LocalDate createdDate;
 
     // điểm (final_score là generated ở DB → read-only trong JPA)
     @Column(name = "mentor_score")  private BigDecimal mentorScore;
