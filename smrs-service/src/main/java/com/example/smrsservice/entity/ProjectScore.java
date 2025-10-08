@@ -7,16 +7,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "role")
+@Table(name = "project_score")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role {
+public class ProjectScore {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String roleName;
+    private String name;
+    private Double score;
+    private String comment;
 
+    @ManyToOne
+    @JoinColumn(name = "project_id")
+    private Project project;
 }

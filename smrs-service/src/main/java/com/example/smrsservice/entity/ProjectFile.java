@@ -7,16 +7,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "role")
+@Table(name = "project_file")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role {
+public class ProjectFile {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String roleName;
+    @Column(name = "file_path")
+    private String filePath;
 
+    private String type;
+
+    @ManyToOne
+    @JoinColumn(name = "project_id")
+    private Project project;
 }

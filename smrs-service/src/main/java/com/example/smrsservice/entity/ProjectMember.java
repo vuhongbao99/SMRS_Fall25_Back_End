@@ -7,16 +7,24 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "role")
+@Table(name = "project_member")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Role {
+public class ProjectMember {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String roleName;
+    @ManyToOne
+    @JoinColumn(name = "project_id")
+    private Project project;
 
+    @ManyToOne
+    @JoinColumn(name = "account_id")
+    private Account account;
+
+    private String status = "Pending";
 }
