@@ -1,13 +1,13 @@
--- MySQL dump 10.13  Distrib 8.0.42, for macos15 (x86_64)
+-- MySQL dump 10.13  Distrib 9.4.0, for macos26.0 (arm64)
 --
--- Host: 127.0.0.1    Database: smrs
+-- Host: localhost    Database: smrs
 -- ------------------------------------------------------
--- Server version	9.3.0-commercial
+-- Server version	9.4.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -16,507 +16,463 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `award_events`
+-- Table structure for table `account`
 --
 
-DROP TABLE IF EXISTS `award_events`;
+DROP TABLE IF EXISTS `account`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `award_events` (
-  `award_event_id` int NOT NULL AUTO_INCREMENT,
-  `event_name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `event_year` int NOT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`award_event_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `age` int DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
+  `create_date` datetime(6) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `phone` varchar(255) DEFAULT NULL,
+  `status` enum('ACTIVE','LOCKED') NOT NULL,
+  `role_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKd4vb66o896tay3yy52oqxr9w0` (`role_id`),
+  CONSTRAINT `FKd4vb66o896tay3yy52oqxr9w0` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `award_events`
+-- Dumping data for table `account`
 --
 
-LOCK TABLES `award_events` WRITE;
-/*!40000 ALTER TABLE `award_events` DISABLE KEYS */;
-/*!40000 ALTER TABLE `award_events` ENABLE KEYS */;
+LOCK TABLES `account` WRITE;
+/*!40000 ALTER TABLE `account` DISABLE KEYS */;
+/*!40000 ALTER TABLE `account` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `award_winners`
+-- Table structure for table `account_file`
 --
 
-DROP TABLE IF EXISTS `award_winners`;
+DROP TABLE IF EXISTS `account_file`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `award_winners` (
-  `award_event_id` int NOT NULL,
-  `topic_id` int NOT NULL,
-  `award_rank` enum('1','2','3') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `final_score` decimal(5,2) NOT NULL,
-  `note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`award_event_id`,`award_rank`),
-  UNIQUE KEY `uq_award_topic_once` (`award_event_id`,`topic_id`),
-  KEY `topic_id` (`topic_id`),
-  CONSTRAINT `award_winners_ibfk_1` FOREIGN KEY (`award_event_id`) REFERENCES `award_events` (`award_event_id`) ON DELETE CASCADE,
-  CONSTRAINT `award_winners_ibfk_2` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_file` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `file_path` varchar(255) DEFAULT NULL,
+  `account_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKee3512pwfoxep4qs1mgthblih` (`account_id`),
+  CONSTRAINT `FKee3512pwfoxep4qs1mgthblih` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `award_winners`
+-- Dumping data for table `account_file`
 --
 
-LOCK TABLES `award_winners` WRITE;
-/*!40000 ALTER TABLE `award_winners` DISABLE KEYS */;
-/*!40000 ALTER TABLE `award_winners` ENABLE KEYS */;
+LOCK TABLES `account_file` WRITE;
+/*!40000 ALTER TABLE `account_file` DISABLE KEYS */;
+/*!40000 ALTER TABLE `account_file` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `blogs`
+-- Table structure for table `council_manager_profile`
 --
 
-DROP TABLE IF EXISTS `blogs`;
+DROP TABLE IF EXISTS `council_manager_profile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `blogs` (
-  `blog_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `blog_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `blog_content` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `visibility` enum('Public','Private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Public',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`blog_id`),
-  KEY `topic_id` (`topic_id`),
-  CONSTRAINT `blogs_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `council_manager_profile` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKscjce88nd1nvxyldvqnl6mrji` (`account_id`),
+  CONSTRAINT `FKscjce88nd1nvxyldvqnl6mrji` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `blogs`
+-- Dumping data for table `council_manager_profile`
 --
 
-LOCK TABLES `blogs` WRITE;
-/*!40000 ALTER TABLE `blogs` DISABLE KEYS */;
-/*!40000 ALTER TABLE `blogs` ENABLE KEYS */;
+LOCK TABLES `council_manager_profile` WRITE;
+/*!40000 ALTER TABLE `council_manager_profile` DISABLE KEYS */;
+/*!40000 ALTER TABLE `council_manager_profile` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `comments`
+-- Table structure for table `council_member_profile`
 --
 
-DROP TABLE IF EXISTS `comments`;
+DROP TABLE IF EXISTS `council_member_profile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `comments` (
-  `comment_id` int NOT NULL AUTO_INCREMENT,
-  `blog_id` int NOT NULL,
-  `lecturer_id` int DEFAULT NULL,
-  `student_id` int DEFAULT NULL,
-  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`comment_id`),
-  KEY `blog_id` (`blog_id`),
-  KEY `lecturer_id` (`lecturer_id`),
-  KEY `student_id` (`student_id`),
-  CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`blog_id`) REFERENCES `blogs` (`blog_id`) ON DELETE CASCADE,
-  CONSTRAINT `comments_ibfk_2` FOREIGN KEY (`lecturer_id`) REFERENCES `lecturers` (`lecturer_id`),
-  CONSTRAINT `comments_ibfk_3` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `council_member_profile` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `account_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKlrb0i2qx28pnawbdvtauqmion` (`account_id`),
+  CONSTRAINT `FKlrb0i2qx28pnawbdvtauqmion` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `comments`
+-- Dumping data for table `council_member_profile`
 --
 
-LOCK TABLES `comments` WRITE;
-/*!40000 ALTER TABLE `comments` DISABLE KEYS */;
-/*!40000 ALTER TABLE `comments` ENABLE KEYS */;
+LOCK TABLES `council_member_profile` WRITE;
+/*!40000 ALTER TABLE `council_member_profile` DISABLE KEYS */;
+/*!40000 ALTER TABLE `council_member_profile` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `council_members`
+-- Table structure for table `lecturer_profile`
 --
 
-DROP TABLE IF EXISTS `council_members`;
+DROP TABLE IF EXISTS `lecturer_profile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `council_members` (
-  `council_id` int NOT NULL,
-  `lecturer_id` int NOT NULL,
-  `member_role` enum('Chairman','Secretary','Reviewer') COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`council_id`,`lecturer_id`),
-  KEY `lecturer_id` (`lecturer_id`),
-  CONSTRAINT `council_members_ibfk_1` FOREIGN KEY (`council_id`) REFERENCES `evaluation_councils` (`council_id`) ON DELETE CASCADE,
-  CONSTRAINT `council_members_ibfk_2` FOREIGN KEY (`lecturer_id`) REFERENCES `lecturers` (`lecturer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lecturer_profile` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `degree` varchar(255) DEFAULT NULL,
+  `teaching_major` varchar(255) DEFAULT NULL,
+  `years_experience` int DEFAULT NULL,
+  `account_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK9joe1eum9n92f55el9hg0abe2` (`account_id`),
+  CONSTRAINT `FK9joe1eum9n92f55el9hg0abe2` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `council_members`
+-- Dumping data for table `lecturer_profile`
 --
 
-LOCK TABLES `council_members` WRITE;
-/*!40000 ALTER TABLE `council_members` DISABLE KEYS */;
-/*!40000 ALTER TABLE `council_members` ENABLE KEYS */;
+LOCK TABLES `lecturer_profile` WRITE;
+/*!40000 ALTER TABLE `lecturer_profile` DISABLE KEYS */;
+/*!40000 ALTER TABLE `lecturer_profile` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `evaluation_councils`
+-- Table structure for table `milestone`
 --
 
-DROP TABLE IF EXISTS `evaluation_councils`;
+DROP TABLE IF EXISTS `milestone`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `evaluation_councils` (
-  `council_id` int NOT NULL AUTO_INCREMENT,
-  `council_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `established_date` date NOT NULL,
-  PRIMARY KEY (`council_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `milestone` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime(6) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `progress_percent` double DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `create_by` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKe8f6dylfqm3rfrm8m7rrgdcrx` (`create_by`),
+  KEY `FKc3o4jxeki21gqbpy8ejyxtnus` (`project_id`),
+  CONSTRAINT `FKc3o4jxeki21gqbpy8ejyxtnus` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`),
+  CONSTRAINT `FKe8f6dylfqm3rfrm8m7rrgdcrx` FOREIGN KEY (`create_by`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `evaluation_councils`
+-- Dumping data for table `milestone`
 --
 
-LOCK TABLES `evaluation_councils` WRITE;
-/*!40000 ALTER TABLE `evaluation_councils` DISABLE KEYS */;
-/*!40000 ALTER TABLE `evaluation_councils` ENABLE KEYS */;
+LOCK TABLES `milestone` WRITE;
+/*!40000 ALTER TABLE `milestone` DISABLE KEYS */;
+/*!40000 ALTER TABLE `milestone` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `evaluation_criteria`
+-- Table structure for table `project`
 --
 
-DROP TABLE IF EXISTS `evaluation_criteria`;
+DROP TABLE IF EXISTS `project`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `evaluation_criteria` (
-  `criteria_id` int NOT NULL AUTO_INCREMENT,
-  `criteria_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `is_active` tinyint(1) DEFAULT '1',
-  PRIMARY KEY (`criteria_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `create_date` datetime(6) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `type` varchar(255) DEFAULT NULL,
+  `owner_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKjk2nfyleqys9pe2h86ap633kw` (`owner_id`),
+  CONSTRAINT `FKjk2nfyleqys9pe2h86ap633kw` FOREIGN KEY (`owner_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `evaluation_criteria`
+-- Dumping data for table `project`
 --
 
-LOCK TABLES `evaluation_criteria` WRITE;
-/*!40000 ALTER TABLE `evaluation_criteria` DISABLE KEYS */;
-/*!40000 ALTER TABLE `evaluation_criteria` ENABLE KEYS */;
+LOCK TABLES `project` WRITE;
+/*!40000 ALTER TABLE `project` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `lecturers`
+-- Table structure for table `project_file`
 --
 
-DROP TABLE IF EXISTS `lecturers`;
+DROP TABLE IF EXISTS `project_file`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `lecturers` (
-  `lecturer_id` int NOT NULL,
-  `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `lecturer_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `department` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `avatar_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`lecturer_id`),
-  UNIQUE KEY `lecturer_code` (`lecturer_code`),
-  CONSTRAINT `lecturers_ibfk_1` FOREIGN KEY (`lecturer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_file` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `file_path` varchar(255) DEFAULT NULL,
+  `type` varchar(255) DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK8lwlt3x7l0bijg1lg36s6ww3s` (`project_id`),
+  CONSTRAINT `FK8lwlt3x7l0bijg1lg36s6ww3s` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `lecturers`
+-- Dumping data for table `project_file`
 --
 
-LOCK TABLES `lecturers` WRITE;
-/*!40000 ALTER TABLE `lecturers` DISABLE KEYS */;
-/*!40000 ALTER TABLE `lecturers` ENABLE KEYS */;
+LOCK TABLES `project_file` WRITE;
+/*!40000 ALTER TABLE `project_file` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_file` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `publications`
+-- Table structure for table `project_image`
 --
 
-DROP TABLE IF EXISTS `publications`;
+DROP TABLE IF EXISTS `project_image`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `publications` (
-  `publication_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `publication_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `journal_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `publication_type` enum('Conference','Journal','Other') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `publication_date` date NOT NULL,
-  `status` enum('Submitted','Accepted','Rejected') COLLATE utf8mb4_unicode_ci DEFAULT 'Submitted',
-  PRIMARY KEY (`publication_id`),
-  KEY `topic_id` (`topic_id`),
-  CONSTRAINT `publications_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_image` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `url` varchar(255) DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKsrkbi9ax581cp14a13mbk9qtm` (`project_id`),
+  CONSTRAINT `FKsrkbi9ax581cp14a13mbk9qtm` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `publications`
+-- Dumping data for table `project_image`
 --
 
-LOCK TABLES `publications` WRITE;
-/*!40000 ALTER TABLE `publications` DISABLE KEYS */;
-/*!40000 ALTER TABLE `publications` ENABLE KEYS */;
+LOCK TABLES `project_image` WRITE;
+/*!40000 ALTER TABLE `project_image` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_image` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `reports`
+-- Table structure for table `project_member`
 --
 
-DROP TABLE IF EXISTS `reports`;
+DROP TABLE IF EXISTS `project_member`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `reports` (
-  `report_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `report_type` enum('Progress','Final') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `report_file_url` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `submitted_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `comments` text COLLATE utf8mb4_unicode_ci,
-  `score` decimal(5,2) DEFAULT NULL,
-  PRIMARY KEY (`report_id`),
-  KEY `topic_id` (`topic_id`),
-  CONSTRAINT `reports_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_member` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `status` varchar(255) DEFAULT NULL,
+  `account_id` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKom5ob1ykogewdkdx4k2ppd86s` (`account_id`),
+  KEY `FK103dwxad12nbaxtmnwus4eft2` (`project_id`),
+  CONSTRAINT `FK103dwxad12nbaxtmnwus4eft2` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`),
+  CONSTRAINT `FKom5ob1ykogewdkdx4k2ppd86s` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `reports`
+-- Dumping data for table `project_member`
 --
 
-LOCK TABLES `reports` WRITE;
-/*!40000 ALTER TABLE `reports` DISABLE KEYS */;
-/*!40000 ALTER TABLE `reports` ENABLE KEYS */;
+LOCK TABLES `project_member` WRITE;
+/*!40000 ALTER TABLE `project_member` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_member` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `roles`
+-- Table structure for table `project_report`
 --
 
-DROP TABLE IF EXISTS `roles`;
+DROP TABLE IF EXISTS `project_report`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `roles` (
-  `role_id` int NOT NULL AUTO_INCREMENT,
-  `role_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`role_id`),
-  UNIQUE KEY `role_name` (`role_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_report` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `content` varchar(255) DEFAULT NULL,
+  `created_date` datetime(6) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKfmrs7nxje8rpxy0iq9585xxvs` (`created_by`),
+  KEY `FKonjlf4bsxqnu9mwx6jcbu1srm` (`project_id`),
+  CONSTRAINT `FKfmrs7nxje8rpxy0iq9585xxvs` FOREIGN KEY (`created_by`) REFERENCES `account` (`id`),
+  CONSTRAINT `FKonjlf4bsxqnu9mwx6jcbu1srm` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `roles`
+-- Dumping data for table `project_report`
 --
 
-LOCK TABLES `roles` WRITE;
-/*!40000 ALTER TABLE `roles` DISABLE KEYS */;
-INSERT INTO `roles` VALUES (1,'ADMIN'),(3,'LECTURER'),(2,'STUDENT');
-/*!40000 ALTER TABLE `roles` ENABLE KEYS */;
+LOCK TABLES `project_report` WRITE;
+/*!40000 ALTER TABLE `project_report` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_report` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `students`
+-- Table structure for table `project_score`
 --
 
-DROP TABLE IF EXISTS `students`;
+DROP TABLE IF EXISTS `project_score`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `students` (
-  `student_id` int NOT NULL,
-  `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `student_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `major` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `class_code` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `faculty` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `avatar_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`student_id`),
-  UNIQUE KEY `student_code` (`student_code`),
-  CONSTRAINT `students_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_score` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `comment` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `score` double DEFAULT NULL,
+  `project_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKd4mn81uwmfqrn8bltaj4jdeiy` (`project_id`),
+  CONSTRAINT `FKd4mn81uwmfqrn8bltaj4jdeiy` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `students`
+-- Dumping data for table `project_score`
 --
 
-LOCK TABLES `students` WRITE;
-/*!40000 ALTER TABLE `students` DISABLE KEYS */;
-/*!40000 ALTER TABLE `students` ENABLE KEYS */;
+LOCK TABLES `project_score` WRITE;
+/*!40000 ALTER TABLE `project_score` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_score` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `topic_evaluations`
+-- Table structure for table `project_score_file`
 --
 
-DROP TABLE IF EXISTS `topic_evaluations`;
+DROP TABLE IF EXISTS `project_score_file`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `topic_evaluations` (
-  `evaluation_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `council_id` int NOT NULL,
-  `reviewer_id` int NOT NULL,
-  `score` decimal(5,2) NOT NULL,
-  `result` enum('Passed','Failed','NeedsRevision') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `comments` text COLLATE utf8mb4_unicode_ci,
-  `evaluation_date` date NOT NULL,
-  PRIMARY KEY (`evaluation_id`),
-  KEY `topic_id` (`topic_id`),
-  KEY `council_id` (`council_id`),
-  KEY `reviewer_id` (`reviewer_id`),
-  CONSTRAINT `topic_evaluations_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE,
-  CONSTRAINT `topic_evaluations_ibfk_2` FOREIGN KEY (`council_id`) REFERENCES `evaluation_councils` (`council_id`),
-  CONSTRAINT `topic_evaluations_ibfk_3` FOREIGN KEY (`reviewer_id`) REFERENCES `lecturers` (`lecturer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `project_score_file` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `file_path` varchar(255) DEFAULT NULL,
+  `project_score_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKf1yi9ysb4v0bvpclomj15sgw6` (`project_score_id`),
+  CONSTRAINT `FKf1yi9ysb4v0bvpclomj15sgw6` FOREIGN KEY (`project_score_id`) REFERENCES `project_score` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `topic_evaluations`
+-- Dumping data for table `project_score_file`
 --
 
-LOCK TABLES `topic_evaluations` WRITE;
-/*!40000 ALTER TABLE `topic_evaluations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `topic_evaluations` ENABLE KEYS */;
+LOCK TABLES `project_score_file` WRITE;
+/*!40000 ALTER TABLE `project_score_file` DISABLE KEYS */;
+/*!40000 ALTER TABLE `project_score_file` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `topic_members`
+-- Table structure for table `role`
 --
 
-DROP TABLE IF EXISTS `topic_members`;
+DROP TABLE IF EXISTS `role`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `topic_members` (
-  `topic_id` int NOT NULL,
-  `student_id` int NOT NULL,
-  `member_role` enum('Leader','Member') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `joined_at` date DEFAULT (curdate()),
-  PRIMARY KEY (`topic_id`,`student_id`),
-  KEY `student_id` (`student_id`),
-  CONSTRAINT `topic_members_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE,
-  CONSTRAINT `topic_members_ibfk_2` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `role` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `role_name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `topic_members`
+-- Dumping data for table `role`
 --
 
-LOCK TABLES `topic_members` WRITE;
-/*!40000 ALTER TABLE `topic_members` DISABLE KEYS */;
-/*!40000 ALTER TABLE `topic_members` ENABLE KEYS */;
+LOCK TABLES `role` WRITE;
+/*!40000 ALTER TABLE `role` DISABLE KEYS */;
+/*!40000 ALTER TABLE `role` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `topic_requirements`
+-- Table structure for table `student_profile`
 --
 
-DROP TABLE IF EXISTS `topic_requirements`;
+DROP TABLE IF EXISTS `student_profile`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `topic_requirements` (
-  `requirement_id` int NOT NULL AUTO_INCREMENT,
-  `topic_id` int NOT NULL,
-  `criteria_id` int NOT NULL,
-  `weight` decimal(4,2) DEFAULT '1.00',
-  `is_mandatory` tinyint(1) DEFAULT '0',
-  `min_score` decimal(5,2) DEFAULT '0.00',
-  `note` text COLLATE utf8mb4_unicode_ci,
-  PRIMARY KEY (`requirement_id`),
-  UNIQUE KEY `uq_topic_criteria` (`topic_id`,`criteria_id`),
-  KEY `criteria_id` (`criteria_id`),
-  CONSTRAINT `topic_requirements_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE CASCADE,
-  CONSTRAINT `topic_requirements_ibfk_2` FOREIGN KEY (`criteria_id`) REFERENCES `evaluation_criteria` (`criteria_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `student_profile` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `current_class` varchar(255) DEFAULT NULL,
+  `major` varchar(255) DEFAULT NULL,
+  `school_year` int DEFAULT NULL,
+  `account_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK2jo43ey0ix0kg5dsqstc6x88j` (`account_id`),
+  CONSTRAINT `FK2jo43ey0ix0kg5dsqstc6x88j` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `topic_requirements`
+-- Dumping data for table `student_profile`
 --
 
-LOCK TABLES `topic_requirements` WRITE;
-/*!40000 ALTER TABLE `topic_requirements` DISABLE KEYS */;
-/*!40000 ALTER TABLE `topic_requirements` ENABLE KEYS */;
+LOCK TABLES `student_profile` WRITE;
+/*!40000 ALTER TABLE `student_profile` DISABLE KEYS */;
+/*!40000 ALTER TABLE `student_profile` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `topics`
+-- Table structure for table `task`
 --
 
-DROP TABLE IF EXISTS `topics`;
+DROP TABLE IF EXISTS `task`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `topics` (
-  `topic_id` int NOT NULL AUTO_INCREMENT,
-  `topic_title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `topic_description` text COLLATE utf8mb4_unicode_ci,
-  `student_id` int NOT NULL,
-  `mentor_id` int NOT NULL,
-  `approval_flow` enum('Council','Mentor') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Council',
-  `approval_status` enum('Pending','Approved','Rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Pending',
-  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
-  `approved_at` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `mentor_score` decimal(5,2) DEFAULT NULL,
-  `council_score` decimal(5,2) DEFAULT NULL,
-  `final_score` decimal(5,2) GENERATED ALWAYS AS (round(((coalesce(`mentor_score`,0) * 0.40) + (coalesce(`council_score`,0) * 0.60)),2)) STORED,
-  `pending_student_id` int GENERATED ALWAYS AS ((case when (`approval_status` = _utf8mb4'Pending') then `student_id` else NULL end)) STORED,
-  PRIMARY KEY (`topic_id`),
-  UNIQUE KEY `uq_one_pending_topic` (`pending_student_id`),
-  KEY `student_id` (`student_id`),
-  KEY `mentor_id` (`mentor_id`),
-  CONSTRAINT `topics_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`),
-  CONSTRAINT `topics_ibfk_2` FOREIGN KEY (`mentor_id`) REFERENCES `lecturers` (`lecturer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `task` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `deadline` datetime(6) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `progress_percent` double DEFAULT NULL,
+  `start_date` datetime(6) DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `assigned_to` int DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `milestone_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK7c777cin4wux3pwpl1e8sxbxr` (`assigned_to`),
+  KEY `FKlfkjmdwpu3e9696jcw6rbkbyy` (`created_by`),
+  KEY `FKt8ankrjadgekxvwc5hh9a36no` (`milestone_id`),
+  CONSTRAINT `FK7c777cin4wux3pwpl1e8sxbxr` FOREIGN KEY (`assigned_to`) REFERENCES `account` (`id`),
+  CONSTRAINT `FKlfkjmdwpu3e9696jcw6rbkbyy` FOREIGN KEY (`created_by`) REFERENCES `account` (`id`),
+  CONSTRAINT `FKt8ankrjadgekxvwc5hh9a36no` FOREIGN KEY (`milestone_id`) REFERENCES `milestone` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `topics`
+-- Dumping data for table `task`
 --
 
-LOCK TABLES `topics` WRITE;
-/*!40000 ALTER TABLE `topics` DISABLE KEYS */;
-/*!40000 ALTER TABLE `topics` ENABLE KEYS */;
+LOCK TABLES `task` WRITE;
+/*!40000 ALTER TABLE `task` DISABLE KEYS */;
+/*!40000 ALTER TABLE `task` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `users`
+-- Dumping routines for database 'smrs'
 --
-
-DROP TABLE IF EXISTS `users`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-  `user_id` int NOT NULL AUTO_INCREMENT,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_status` enum('Active','Inactive') COLLATE utf8mb4_unicode_ci DEFAULT 'Active',
-  `role_id` int NOT NULL,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `role_id` (`role_id`),
-  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `users`
---
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -527,4 +483,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-02 15:59:53
+-- Dump completed on 2025-10-13 10:26:02
