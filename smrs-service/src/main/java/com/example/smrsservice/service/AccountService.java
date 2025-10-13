@@ -1,6 +1,7 @@
 package com.example.smrsservice.service;
 
 import com.example.smrsservice.common.AccountStatus;
+import com.example.smrsservice.config.SecurityConfig;
 import com.example.smrsservice.dto.request.AccountImportRequest;
 import com.example.smrsservice.dto.response.AccountDetailResponse;
 import com.example.smrsservice.dto.response.AccountImportResponse;
@@ -13,7 +14,7 @@ import com.example.smrsservice.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,7 +32,7 @@ public class AccountService {
 
   private final AccountRepository accountRepository;
   private final RoleRepository roleRepository;
-  private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+  private final PasswordEncoder passwordEncoder = new SecurityConfig().passwordEncoder();
 
   public List<AccountDetailResponse> getAccounts() {
     return accountRepository.findAll()
