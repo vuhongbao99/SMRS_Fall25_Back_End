@@ -1,7 +1,6 @@
 package com.example.smrsservice.service;
 
 import com.example.smrsservice.common.AccountStatus;
-import com.example.smrsservice.config.SecurityConfig;
 import com.example.smrsservice.dto.request.AccountImportRequest;
 import com.example.smrsservice.dto.response.AccountDetailResponse;
 import com.example.smrsservice.dto.response.AccountImportResponse;
