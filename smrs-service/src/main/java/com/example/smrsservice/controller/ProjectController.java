@@ -2,7 +2,9 @@ package com.example.smrsservice.controller;
 
 import com.example.smrsservice.dto.request.ProjectCreateRequest;
 import com.example.smrsservice.dto.request.ProjectUpdateRequest;
+import com.example.smrsservice.dto.request.ProjectAddMembersRequest;
 import com.example.smrsservice.entity.Project;
+import com.example.smrsservice.entity.ProjectMember;
 import com.example.smrsservice.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -43,5 +45,11 @@ public class ProjectController {
   public ResponseEntity<Void> delete(@PathVariable Integer id) {
     projectService.delete(id);
     return ResponseEntity.status(200).build();
+  }
+
+  @PostMapping("/{id}/add-members")
+  public ResponseEntity<List<ProjectMember>> addMembers(@PathVariable Integer id,
+      @RequestBody ProjectAddMembersRequest request) {
+    return ResponseEntity.ok(projectService.addMembers(id, request.getAccountIds()));
   }
 }

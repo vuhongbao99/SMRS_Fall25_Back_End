@@ -3,7 +3,9 @@ package com.example.smrsservice.service;
 import com.example.smrsservice.dto.request.ProjectCreateRequest;
 import com.example.smrsservice.dto.request.ProjectUpdateRequest;
 import com.example.smrsservice.entity.Project;
+import com.example.smrsservice.entity.ProjectMember;
 import com.example.smrsservice.repository.AccountRepository;
+import com.example.smrsservice.repository.ProjectMemberRepository;
 import com.example.smrsservice.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,6 +23,7 @@ public class ProjectService {
 
   private final ProjectRepository projectRepository;
   private final AccountRepository accountRepository;
+  private final ProjectMemberRepository projectMemberRepository;
 
   public List<Project> getAll() {
     return projectRepository.findAll();
@@ -72,5 +76,31 @@ public class ProjectService {
     Project project = projectRepository.findById(id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
     projectRepository.delete(project);
+  }
+
+  public List<ProjectMember> addMembers(Integer projectId, List<Integer> accountIds) {
+    if (accountIds == null || accountIds.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "accountIds must not be empty");
+    }
+    Project project = projectRepository.findById(projectId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+
+    List<ProjectMember> created = new ArrayList<>();
+    for (Integer accountId : accountIds) {
+      var account = accountRepository.findById(accountId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account not found: " + accountId));
+
+      boolean isExisted = projectMemberRepository.existsByProjectAndAccount(project, account);
+      if (isExisted) {
+        // skip existing membership
+        continue;
+      }
+
+      ProjectMember pm = new ProjectMember();
+      pm.setProject(project);
+      pm.setAccount(account);
+      created.add(projectMemberRepository.save(pm));
+    }
+    return created;
   }
 }
