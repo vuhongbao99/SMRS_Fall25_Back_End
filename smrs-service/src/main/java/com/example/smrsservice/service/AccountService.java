@@ -32,7 +32,7 @@ public class AccountService {
 
   private final AccountRepository accountRepository;
   private final RoleRepository roleRepository;
-  private final PasswordEncoder passwordEncoder = new SecurityConfig().passwordEncoder();
+  private final PasswordEncoder passwordEncoder;
 
   public List<AccountDetailResponse> getAccounts() {
     return accountRepository.findAll()

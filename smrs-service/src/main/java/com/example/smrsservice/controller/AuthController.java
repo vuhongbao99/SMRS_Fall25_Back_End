@@ -30,8 +30,9 @@ public class AuthController {
       errorResponse.put("error", "Authentication failed");
       errorResponse.put("message", e.getMessage());
       errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
-      
+
       return ResponseEntity.badRequest().body(errorResponse);
     }
   }
+
 }
