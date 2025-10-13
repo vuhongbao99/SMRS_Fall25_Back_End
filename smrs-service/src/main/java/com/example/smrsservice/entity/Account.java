@@ -1,6 +1,7 @@
 package com.example.smrsservice.entity;
 
 import com.example.smrsservice.common.AccountStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,7 +36,10 @@ public class Account {
     @Column(length = 20, nullable = false)
     private AccountStatus status;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @JsonIgnore
     private Role role;
+
+
 }

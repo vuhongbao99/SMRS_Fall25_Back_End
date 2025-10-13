@@ -1,8 +1,8 @@
 package com.example.smrsservice.controller;
 
 import com.example.smrsservice.dto.request.LoginRequest;
-import com.example.smrsservice.dto.response.LoginResponse;
-import com.example.smrsservice.service.AuthService;
+//import com.example.smrsservice.dto.response.LoginResponse;
+//import com.example.smrsservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,13 +17,13 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-  private final AuthService authService;
+//  private final AuthService authService;
 
   @PostMapping("/login")
   public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
     try {
-      LoginResponse response = authService.login(loginRequest);
-      return ResponseEntity.ok(response);
+//      LoginResponse response = authService.login(loginRequest);
+      return ResponseEntity.ok("ok");
     } catch (RuntimeException e) {
       // Return error details for debugging
       Map<String, Object> errorResponse = new HashMap<>();
