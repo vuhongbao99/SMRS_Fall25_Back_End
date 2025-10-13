@@ -1,5 +1,6 @@
 package com.example.smrsservice.service;
 
+import com.example.smrsservice.common.AccountStatus;
 import com.example.smrsservice.entity.Account;
 import com.example.smrsservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         .password(account.getPassword())
         .authorities(authorities)
         .accountExpired(false)
-        .accountLocked(account.getStatus() == com.example.smrsservice.common.AccountStatus.LOCKED)
+        .accountLocked(account.getStatus() == AccountStatus.LOCKED)
         .credentialsExpired(false)
-        .disabled(account.getStatus() != com.example.smrsservice.common.AccountStatus.ACTIVE)
+        .disabled(account.getStatus() != AccountStatus.ACTIVE)
         .build();
   }
 }
