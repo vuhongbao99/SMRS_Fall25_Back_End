@@ -1,7 +1,6 @@
 package com.example.smrsservice.controller;
 
 import com.example.smrsservice.dto.response.AccountDetailResponse;
-import com.example.smrsservice.entity.Account;
 import com.example.smrsservice.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +12,9 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/accounts")
-
-
 public class AccountController {
-
+  
     private final AccountService accountService;
-
-
 
     @GetMapping
     public ResponseEntity<List<AccountDetailResponse>> getAll(){
