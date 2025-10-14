@@ -1,4 +1,4 @@
-package com.example.smrsservice.util;
+package com.example.smrsservice.security;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

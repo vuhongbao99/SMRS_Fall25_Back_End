@@ -1,7 +1,6 @@
 package com.example.smrsservice.entity;
 
 import com.example.smrsservice.common.AccountStatus;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Table(name = "account")
@@ -36,10 +34,7 @@ public class Account {
     @Column(length = 20, nullable = false)
     private AccountStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "role_id")
-    @JsonIgnore
     private Role role;
-
-
 }

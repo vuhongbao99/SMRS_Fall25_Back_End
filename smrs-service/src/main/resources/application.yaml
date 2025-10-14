@@ -12,7 +12,4 @@ Spring:
     hibernate:
       ddl-auto: update
 
-# JWT Configuration
-jwt:
-  secret: very-important-key-that-is-at-least-256-bits-long-for-security-purposes
-  expiration: 86400000 # 24 hours in milliseconds
+

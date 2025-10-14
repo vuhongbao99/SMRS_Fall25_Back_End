@@ -6,8 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.UUID;
+import java.util.List;
 
 @Entity
 @Table(name = "project")
@@ -35,4 +36,10 @@ public class Project {
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private Account owner;
+
+    @OneToMany(mappedBy = "project")
+    private List<ProjectFile> files = new ArrayList<>();
+
+    @OneToMany(mappedBy = "project")
+    private List<ProjectImage> images = new ArrayList<>();
 }
