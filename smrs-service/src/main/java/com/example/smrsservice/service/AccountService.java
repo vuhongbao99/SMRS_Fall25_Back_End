@@ -2,8 +2,10 @@ package com.example.smrsservice.service;
 
 import com.example.smrsservice.common.AccountStatus;
 import com.example.smrsservice.config.PasswordEncoderConfig;
+import com.example.smrsservice.dto.account.AccountDetailResponse;
 import com.example.smrsservice.dto.account.CreateAccountDto;
 import com.example.smrsservice.dto.account.CreateResponseDto;
+import com.example.smrsservice.dto.account.UpdateAccountDto;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
 import com.example.smrsservice.dto.common.ResponseDto;
@@ -11,7 +13,6 @@ import com.example.smrsservice.entity.Account;
 import com.example.smrsservice.entity.Role;
 import com.example.smrsservice.repository.AccountRepository;
 import com.example.smrsservice.repository.RoleRepository;
-import com.example.smrsservice.response.AccountDetailResponse;
 import com.example.smrsservice.security.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
@@ -35,22 +36,6 @@ public class AccountService {
     private final JwtTokenUtil jwtTokenProvider;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final PasswordEncoderConfig passwordEncoderConfig;
-
-    public List<AccountDetailResponse> getAccounts() {
-        return accountRepository.findAll()
-                .stream()
-                .map(account -> AccountDetailResponse.builder()
-                        .id(account.getId())
-                        .email(account.getEmail())
-                        .avatar(account.getAvatar())
-                        .phone(account.getPhone())
-                        .name(account.getName())
-                        .age(account.getAge())
-                        .build())
-                .toList();
-
-
-    }
 
     public ResponseDto<LoginResponseDto> login(LoginRequest request) {
         var acc = accountRepository.findByEmail(request.getEmail())
@@ -178,5 +163,41 @@ public class AccountService {
             return String.valueOf((int) cell.getNumericCellValue());
         return "";
     }
+
+    public List<AccountDetailResponse> getAccountDetail() {
+        return accountRepository.findAll()
+                .stream()
+                .map(account -> AccountDetailResponse.builder()
+                        .id(account.getId())
+                        .email(account.getEmail())
+                        .name(account.getName())
+                        .build())
+                .toList();
+
+    }
+    public void deleteAccount(Integer id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Khoong tìm thấy tài khoản"));
+
+        accountRepository.deleteById(account.getId());
+    }
+
+    public AccountDetailResponse updateAccount(Integer id,UpdateAccountDto request) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Khoong tìm thấy tài khoản"));
+
+        if (request.getName() != null && request.getPhone() != null) {
+            account.setName(request.getName());
+            account.setPhone(request.getPhone());
+            accountRepository.save(account);
+        }
+        return AccountDetailResponse.builder()
+                .id(id)
+                .email(account.getEmail())
+                .name(account.getName())
+                .build();
+
+    }
+
 
 }

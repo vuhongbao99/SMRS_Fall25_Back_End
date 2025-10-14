@@ -1,12 +1,10 @@
-package com.example.smrsservice.response;
+package com.example.smrsservice.dto.account;
 
 import com.example.smrsservice.entity.Role;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @Builder
 public class AccountDetailResponse {
     private Integer id;
