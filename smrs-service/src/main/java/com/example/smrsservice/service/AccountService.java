@@ -2,10 +2,7 @@ package com.example.smrsservice.service;
 
 import com.example.smrsservice.common.AccountStatus;
 import com.example.smrsservice.config.PasswordEncoderConfig;
-import com.example.smrsservice.dto.account.AccountDetailResponse;
-import com.example.smrsservice.dto.account.CreateAccountDto;
-import com.example.smrsservice.dto.account.CreateResponseDto;
-import com.example.smrsservice.dto.account.UpdateAccountDto;
+import com.example.smrsservice.dto.account.*;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
 import com.example.smrsservice.dto.common.ResponseDto;
@@ -17,6 +14,9 @@ import com.example.smrsservice.security.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,15 +164,25 @@ public class AccountService {
         return "";
     }
 
-    public List<AccountDetailResponse> getAccountDetail() {
-        return accountRepository.findAll()
-                .stream()
-                .map(account -> AccountDetailResponse.builder()
+    public PageResponse<AccountDetailResponse> getAccountDetail(int page , int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        Page<Account> accounts = accountRepository.findAll(pageable);
+
+        List<Account> accountList = accounts.getContent();
+
+        return PageResponse.<AccountDetailResponse>builder()
+                .currentPages(page)
+                .pageSizes(pageable.getPageSize())
+                .totalPages(accounts.getTotalPages())
+                .totalElements(accounts.getTotalElements())
+                .data(accountList.stream().map(account -> AccountDetailResponse.builder()
                         .id(account.getId())
                         .email(account.getEmail())
                         .name(account.getName())
-                        .build())
-                .toList();
+                        .build()).toList())
+                .build();
 
     }
     public void deleteAccount(Integer id) {

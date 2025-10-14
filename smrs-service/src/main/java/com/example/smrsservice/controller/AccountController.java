@@ -1,6 +1,7 @@
 package com.example.smrsservice.controller;
 import com.example.smrsservice.dto.account.AccountDetailResponse;
 import com.example.smrsservice.dto.account.CreateAccountDto;
+import com.example.smrsservice.dto.account.PageResponse;
 import com.example.smrsservice.dto.account.UpdateAccountDto;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
@@ -70,8 +71,8 @@ public class AccountController {
     }
 
     @GetMapping("/list")
-    List<AccountDetailResponse> getAccountDetail() {
-        return accountService.getAccountDetail();
+    PageResponse<AccountDetailResponse> getAccountDetail(@RequestParam Integer page, @RequestParam Integer size) {
+        return accountService.getAccountDetail(page, size);
     }
 
     @DeleteMapping("/{id}")
