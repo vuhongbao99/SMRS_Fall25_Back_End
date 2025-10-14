@@ -1,5 +1,7 @@
 package com.example.smrsservice.controller;
+import com.example.smrsservice.dto.account.AccountDetailResponse;
 import com.example.smrsservice.dto.account.CreateAccountDto;
+import com.example.smrsservice.dto.account.UpdateAccountDto;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
 import com.example.smrsservice.dto.common.ResponseDto;
@@ -65,6 +67,21 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi import file: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/list")
+    List<AccountDetailResponse> getAccountDetail() {
+        return accountService.getAccountDetail();
+    }
+
+    @DeleteMapping("/{id}")
+    void deleteAccountById(@PathVariable Integer id) {
+        accountService.deleteAccount(id);
+    }
+
+    @PutMapping("/update/{id}")
+    AccountDetailResponse updateAccountById(@PathVariable Integer id, @RequestBody UpdateAccountDto request) {
+        return accountService.updateAccount(id,request);
     }
 
 }
