@@ -1,4 +1,5 @@
-package com.example.smrsservice.util;
+package com.example.smrsservice.security;
+
 
 import com.example.smrsservice.entity.Account;
 import com.example.smrsservice.repository.AccountRepository;

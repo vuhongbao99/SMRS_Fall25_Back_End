@@ -1,14 +1,9 @@
-package com.example.smrsservice.dto.response;
+package com.example.smrsservice.response;
 
 import com.example.smrsservice.entity.Role;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Date;
 
 @Getter
 @Setter
