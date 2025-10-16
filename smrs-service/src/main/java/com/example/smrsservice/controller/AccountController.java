@@ -1,8 +1,5 @@
 package com.example.smrsservice.controller;
-import com.example.smrsservice.dto.account.AccountDetailResponse;
-import com.example.smrsservice.dto.account.CreateAccountDto;
-import com.example.smrsservice.dto.account.PageResponse;
-import com.example.smrsservice.dto.account.UpdateAccountDto;
+import com.example.smrsservice.dto.account.*;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
 import com.example.smrsservice.dto.common.ResponseDto;
@@ -15,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -83,6 +81,11 @@ public class AccountController {
     @PutMapping("/update/{id}")
     AccountDetailResponse updateAccountById(@PathVariable Integer id, @RequestBody UpdateAccountDto request) {
         return accountService.updateAccount(id,request);
+    }
+
+    @GetMapping("/me")
+    public ResponseDto<AccountDto> me(Authentication authentication){
+        return accountService.getMe(authentication);
     }
 
 }
