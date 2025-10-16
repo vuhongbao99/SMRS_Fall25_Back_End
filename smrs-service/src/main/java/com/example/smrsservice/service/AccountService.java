@@ -17,6 +17,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -209,5 +210,26 @@ public class AccountService {
 
     }
 
+    public ResponseDto<AccountDto> getMe(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof Account acc)) {
+            return ResponseDto.fail("Unauthorized");
+        }
 
-}
+        Optional<Account> accountOpt;
+            accountOpt = accountRepository.findByEmail(acc.getEmail());
+
+        Account account = accountOpt.orElseThrow(() -> new RuntimeException("Account not found"));
+
+        AccountDto dto = AccountDto.builder()
+                .id(Long.valueOf(account.getId()))
+                .name(account.getName())
+                .email(account.getEmail())
+                .phone(account.getPhone())
+                .age(account.getAge())
+                .build();
+
+        return ResponseDto.success(dto, "OK");
+
+
+
+    }}
