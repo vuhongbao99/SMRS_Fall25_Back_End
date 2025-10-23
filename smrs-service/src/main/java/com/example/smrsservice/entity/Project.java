@@ -1,5 +1,6 @@
 package com.example.smrsservice.entity;
 
+import com.example.smrsservice.common.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,7 +25,9 @@ public class Project {
 
     private String name;
     private String description;
-    private String status = "Pending";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ProjectStatus status = ProjectStatus.PENDING;
     private String type;
 
     @Column(name = "create_date")

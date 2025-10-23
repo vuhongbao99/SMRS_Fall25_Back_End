@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.util.*;
 
 @Service
@@ -37,6 +39,7 @@ public class AccountService {
     private final JwtTokenUtil jwtTokenProvider;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final PasswordEncoderConfig passwordEncoderConfig;
+    private final MailService mailService;
 
     public ResponseDto<LoginResponseDto> login(LoginRequest request) {
         var acc = accountRepository.findByEmail(request.getEmail())
@@ -142,7 +145,7 @@ public class AccountService {
                 acc.setStatus(statusValue.equals("LOCKED") ? AccountStatus.LOCKED : AccountStatus.ACTIVE);
 
                 String roleName = getCellValue(row.getCell(7));
-                Role role = roleRepository.findByRoleName(roleName).get();
+                Role role = roleRepository.findByRoleName(roleName).get(); 
                 acc.setRole(role);
 
                 accounts.add(acc);
@@ -232,4 +235,80 @@ public class AccountService {
 
 
 
-    }}
+    }
+
+    // 2.1 Quên mật khẩu — tạo mật khẩu tạm và email cho user
+    public void forgotPasswordSimple(ForgotPasswordRequest req) {
+        if (req == null || req.getEmail() == null || req.getEmail().isBlank()) return;
+
+        // Không lộ thông tin tài khoản: nếu ko có email thì cũng trả OK
+        Optional<Account> accOpt = accountRepository.findByEmail(req.getEmail().trim());
+        if (accOpt.isEmpty()) return;
+
+        Account acc = accOpt.get();
+
+        String tempPassword = generateTempPassword(12); // độ dài tuỳ chỉnh
+        acc.setPassword(passwordEncoder.encode(tempPassword));
+        accountRepository.save(acc);
+
+        String subject = "[SMRS] Mật khẩu tạm cho tài khoản của bạn";
+        String body = """
+                Xin chào %s,
+
+                Hệ thống vừa tạo MẬT KHẨU TẠM cho tài khoản của bạn:
+                %s
+
+                Vui lòng đăng nhập bằng mật khẩu tạm này và ĐỔI MẬT KHẨU NGAY trong mục Tài khoản.
+                Nếu không phải bạn yêu cầu, hãy bỏ qua email này.
+
+                Trân trọng.
+                """.formatted(Optional.ofNullable(acc.getName()).orElse("bạn"), tempPassword);
+
+        try {
+            mailService.sendSimpleMail(acc.getEmail(), subject, body);
+        } catch (Exception e) {
+            // Cho môi trường dev/chưa cấu hình SMTP: in ra console để test
+            System.out.println("[DEV] Temp password for " + acc.getEmail() + ": " + tempPassword);
+        }
+    }
+
+    // 2.2 Đổi mật khẩu khi đã đăng nhập
+    public void changePassword(ChangePasswordRequest req, Authentication authentication) {
+        if (req == null || req.getOldPassword() == null || req.getNewPassword() == null) {
+            throw new IllegalArgumentException("Thiếu thông tin mật khẩu");
+        }
+        if (req.getConfirmPassword() != null && !req.getNewPassword().equals(req.getConfirmPassword())) {
+            throw new IllegalArgumentException("Password confirmation không khớp");
+        }
+        validatePasswordStrength(req.getNewPassword());
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalStateException("User chưa đăng nhập");
+        }
+
+        String email = authentication.getName(); // với JWT thường là email
+        Account acc = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
+
+        if (!passwordEncoder.matches(req.getOldPassword(), acc.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu cũ không đúng");
+        }
+
+        acc.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        accountRepository.save(acc);
+    }
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /** Sinh mật khẩu tạm dạng Base64URL (không ký tự lạ, dễ gõ). */
+    private static String generateTempPassword(int numBytes) {
+        byte[] buf = new byte[numBytes];
+        SECURE_RANDOM.nextBytes(buf);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
+    }
+
+    private static void validatePasswordStrength(String pwd) {
+        if (pwd.length() < 8) throw new IllegalArgumentException("Password tối thiểu 8 ký tự");
+    }
+
+}
