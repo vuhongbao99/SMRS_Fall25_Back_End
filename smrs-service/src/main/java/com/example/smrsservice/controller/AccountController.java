@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -86,6 +87,20 @@ public class AccountController {
     @GetMapping("/me")
     public ResponseDto<AccountDto> me(Authentication authentication){
         return accountService.getMe(authentication);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        accountService.forgotPasswordSimple(req);
+        // Luôn trả OK để không lộ email tồn tại hay không
+        return ResponseEntity.ok(Map.of("message", "Nếu email tồn tại, mật khẩu tạm đã được gửi."));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest req,
+                                            Authentication auth) {
+        accountService.changePassword(req, auth);
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
 
 }
