@@ -17,9 +17,9 @@ Spring:
 # Cloudy Config
 # =======================
 cloudinary:
-  cloud_name: your_cloud_name
-  api_key: your_api_key
-  api_secret: your_api_secret
+  cloud_name: dvn5wyrhv
+  api_key: 945984166731914
+  api_secret: qOr2LrbP6eBQtFtZk2QlKnOvfY4
 
 ---
 
