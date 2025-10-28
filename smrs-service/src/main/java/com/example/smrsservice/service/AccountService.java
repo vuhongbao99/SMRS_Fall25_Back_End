@@ -145,7 +145,7 @@ public class AccountService {
                 acc.setStatus(statusValue.equals("LOCKED") ? AccountStatus.LOCKED : AccountStatus.ACTIVE);
 
                 String roleName = getCellValue(row.getCell(7));
-                Role role = roleRepository.findByRoleName(roleName).get(); 
+                Role role = roleRepository.findByRoleName(roleName).get();
                 acc.setRole(role);
 
                 accounts.add(acc);
@@ -214,27 +214,40 @@ public class AccountService {
     }
 
     public ResponseDto<AccountDto> getMe(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof Account acc)) {
-            return ResponseDto.fail("Unauthorized");
+        try {
+            Account account = currentAccount(authentication);
+            AccountDto dto = AccountDto.builder()
+                    .id(Long.valueOf(account.getId()))
+                    .name(account.getName())
+                    .email(account.getEmail())
+                    .phone(account.getPhone())
+                    .age(account.getAge())
+                    .build();
+            return ResponseDto.success(dto, "OK");
+        } catch (Exception e) {
+            return ResponseDto.fail(e.getMessage());
         }
 
-        Optional<Account> accountOpt;
-            accountOpt = accountRepository.findByEmail(acc.getEmail());
-
-        Account account = accountOpt.orElseThrow(() -> new RuntimeException("Account not found"));
-
-        AccountDto dto = AccountDto.builder()
-                .id(Long.valueOf(account.getId()))
-                .name(account.getName())
-                .email(account.getEmail())
-                .phone(account.getPhone())
-                .age(account.getAge())
-                .build();
-
-        return ResponseDto.success(dto, "OK");
 
 
+    }
 
+    private String extractEmail(Authentication authentication) {
+        if (authentication == null) throw new IllegalStateException("User chưa đăng nhập");
+        Object p = authentication.getPrincipal();
+        if (p instanceof Account a && a.getEmail() != null) return a.getEmail();
+        // Nếu filter để principal=String (email) thì rơi vào đây
+        if (p instanceof String s && !s.isBlank()) return s;
+        // Fallback: nhiều provider setName() = username/email
+        String name = authentication.getName();
+        if (name != null && !name.isBlank()) return name;
+        throw new IllegalStateException("Không lấy được email từ Authentication");
+    }
+
+    private Account currentAccount(Authentication authentication) {
+        String email = extractEmail(authentication);
+        return accountRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
     }
 
     // 2.1 Quên mật khẩu — tạo mật khẩu tạm và email cho user
@@ -274,7 +287,7 @@ public class AccountService {
 
     // 2.2 Đổi mật khẩu khi đã đăng nhập
     public void changePassword(ChangePasswordRequest req, Authentication authentication) {
-        if (req == null || req.getOldPassword() == null || req.getNewPassword() == null) {
+        if (req == null || req.getNewPassword() == null) {
             throw new IllegalArgumentException("Thiếu thông tin mật khẩu");
         }
         if (req.getConfirmPassword() != null && !req.getNewPassword().equals(req.getConfirmPassword())) {
@@ -282,15 +295,10 @@ public class AccountService {
         }
         validatePasswordStrength(req.getNewPassword());
 
-        if (authentication == null || authentication.getName() == null) {
-            throw new IllegalStateException("User chưa đăng nhập");
-        }
+        Account acc = currentAccount(authentication);  // <-- Lấy đúng account từ principal/DB
 
-        String email = authentication.getName(); // với JWT thường là email
-        Account acc = accountRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
-
-        if (!passwordEncoder.matches(req.getOldPassword(), acc.getPassword())) {
+        // Kiểm tra oldPassword dựa trên mật khẩu hiện tại (bao gồm mật khẩu tạm sau forgot)
+        if (req.getOldPassword() == null || !passwordEncoder.matches(req.getOldPassword(), acc.getPassword())) {
             throw new IllegalArgumentException("Mật khẩu cũ không đúng");
         }
 
