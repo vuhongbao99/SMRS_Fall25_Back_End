@@ -126,12 +126,11 @@ public class AccountService {
                 Account acc = accountRepository.findByEmail(email).orElse(new Account());
                 boolean isNew = (acc.getId() == 0);
 
-                acc.setEmail(email);
                 acc.setPassword(passwordEncoder.encode(getCellValue(row.getCell(1))));
-                acc.setAvatar(getCellValue(row.getCell(2)));
-                acc.setPhone(getCellValue(row.getCell(3)));
-                acc.setName(getCellValue(row.getCell(4)));
 
+                acc.setName(getCellValue(row.getCell(2)));
+                acc.setPhone(getCellValue(row.getCell(3)));
+                acc.setAvatar(getCellValue(row.getCell(4)));
                 String ageStr = getCellValue(row.getCell(5));
                 if (!ageStr.isEmpty()) {
                     acc.setAge(Integer.parseInt(ageStr));
@@ -184,7 +183,13 @@ public class AccountService {
                 .data(accountList.stream().map(account -> AccountDetailResponse.builder()
                         .id(account.getId())
                         .email(account.getEmail())
+                        .avatar(account.getAvatar())
+                        .phone(account.getPhone())
                         .name(account.getName())
+                        .age(account.getAge())
+                        .status(account.getStatus() != null ? account.getStatus().name() : null)
+                        .role(account.getRole())
+                        .locked(account.getStatus() != null && account.getStatus() == AccountStatus.LOCKED)
                         .build()).toList())
                 .build();
 
@@ -318,5 +323,8 @@ public class AccountService {
     private static void validatePasswordStrength(String pwd) {
         if (pwd.length() < 8) throw new IllegalArgumentException("Password tối thiểu 8 ký tự");
     }
+
+
+    // chỉnh sửa
 
 }
