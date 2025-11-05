@@ -111,41 +111,71 @@ public class AccountService {
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.iterator();
 
-            int rowNumber = 0;
+            // Đọc header row
+            Map<String, Integer> headerMap = new HashMap<>();
+            if (rows.hasNext()) {
+                Row headerRow = rows.next();
+                for (Cell cell : headerRow) {
+                    String columnName = cell.getStringCellValue().trim().toLowerCase();
+                    headerMap.put(columnName, cell.getColumnIndex());
+                }
+            }
+
+            // Kiểm tra các cột bắt buộc
+            if (!headerMap.containsKey("email")) {
+                throw new RuntimeException("Missing required column: email");
+            }
+
+            // Đọc data rows
             while (rows.hasNext()) {
                 Row row = rows.next();
 
-                if (rowNumber == 0) {
-                    rowNumber++;
-                    continue;
-                }
-
-                String email = getCellValue(row.getCell(0));
+                String email = getCellValue(row.getCell(headerMap.get("email")));
                 if (email == null || email.isBlank()) continue;
 
                 Account acc = accountRepository.findByEmail(email).orElse(new Account());
-                boolean isNew = (acc.getId() == 0);
-
-                acc.setPassword(passwordEncoder.encode(getCellValue(row.getCell(1))));
-
-                acc.setName(getCellValue(row.getCell(2)));
-                acc.setPhone(getCellValue(row.getCell(3)));
-                acc.setAvatar(getCellValue(row.getCell(4)));
-                String ageStr = getCellValue(row.getCell(5));
-                if (!ageStr.isEmpty()) {
-                    acc.setAge(Integer.parseInt(ageStr));
-                }
+                boolean isNew = (acc.getId() == null);
 
                 if (isNew) {
+                    acc.setEmail(email);
                     acc.setCreateDate(new Date());
                 }
 
-                String statusValue = getCellValue(row.getCell(6)).toUpperCase();
-                acc.setStatus(statusValue.equals("LOCKED") ? AccountStatus.LOCKED : AccountStatus.ACTIVE);
+                // Đọc theo tên cột trong header
+                if (headerMap.containsKey("password")) {
+                    acc.setPassword(passwordEncoder.encode(
+                            getCellValue(row.getCell(headerMap.get("password")))));
+                }
 
-                String roleName = getCellValue(row.getCell(7));
-                Role role = roleRepository.findByRoleName(roleName).get();
-                acc.setRole(role);
+                if (headerMap.containsKey("name")) {
+                    acc.setName(getCellValue(row.getCell(headerMap.get("name"))));
+                }
+
+                if (headerMap.containsKey("avatar")) {
+                    acc.setAvatar(getCellValue(row.getCell(headerMap.get("avatar"))));
+                }
+
+                if (headerMap.containsKey("phone")) {
+                    acc.setPhone(getCellValue(row.getCell(headerMap.get("phone"))));
+                }
+
+                if (headerMap.containsKey("age")) {
+                    String ageStr = getCellValue(row.getCell(headerMap.get("age")));
+                    if (!ageStr.isEmpty()) {
+                        acc.setAge(Integer.parseInt(ageStr));
+                    }
+                }
+
+                if (headerMap.containsKey("status")) {
+                    String statusValue = getCellValue(row.getCell(headerMap.get("status"))).toUpperCase();
+                    acc.setStatus(statusValue.equals("LOCKED") ? AccountStatus.LOCKED : AccountStatus.ACTIVE);
+                }
+
+                if (headerMap.containsKey("role")) {
+                    String roleName = getCellValue(row.getCell(headerMap.get("role")));
+                    Role role = roleRepository.findByRoleName(roleName).orElseThrow();
+                    acc.setRole(role);
+                }
 
                 accounts.add(acc);
             }
@@ -226,6 +256,7 @@ public class AccountService {
                     .name(account.getName())
                     .email(account.getEmail())
                     .phone(account.getPhone())
+                    .role(account.getRole() != null ? account.getRole().getRoleName() : null)
                     .age(account.getAge())
                     .build();
             return ResponseDto.success(dto, "OK");
@@ -238,14 +269,29 @@ public class AccountService {
     }
 
     private String extractEmail(Authentication authentication) {
-        if (authentication == null) throw new IllegalStateException("User chưa đăng nhập");
-        Object p = authentication.getPrincipal();
-        if (p instanceof Account a && a.getEmail() != null) return a.getEmail();
-        // Nếu filter để principal=String (email) thì rơi vào đây
-        if (p instanceof String s && !s.isBlank()) return s;
-        // Fallback: nhiều provider setName() = username/email
-        String name = authentication.getName();
-        if (name != null && !name.isBlank()) return name;
+        if (authentication == null)
+            throw new IllegalStateException("User chưa đăng nhập");
+
+        Object principal = authentication.getPrincipal();
+
+        // ✅ Nếu principal là Account (custom entity)
+        if (principal instanceof Account acc) {
+            if (acc.getEmail() == null || acc.getEmail().isBlank()) {
+                throw new IllegalStateException("Account không có email");
+            }
+            return acc.getEmail();
+        }
+
+        // ✅ Nếu principal là UserDetails mặc định của Spring
+        if (principal instanceof org.springframework.security.core.userdetails.User user) {
+            return user.getUsername(); // username thường là email
+        }
+
+        // ✅ Nếu principal là String (JWT filter custom)
+        if (principal instanceof String s && !s.isBlank()) {
+            return s;
+        }
+
         throw new IllegalStateException("Không lấy được email từ Authentication");
     }
 

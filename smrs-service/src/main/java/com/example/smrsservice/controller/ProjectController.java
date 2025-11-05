@@ -3,12 +3,14 @@ package com.example.smrsservice.controller;
 
 import com.example.smrsservice.dto.common.ResponseDto;
 import com.example.smrsservice.dto.project.ProjectCreateDto;
+import com.example.smrsservice.dto.project.ProjectDetailResponse;
 import com.example.smrsservice.dto.project.ProjectResponse;
 import com.example.smrsservice.dto.project.UpdateProjectStatusRequest;
 import com.example.smrsservice.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -38,13 +40,18 @@ public class ProjectController {
 
 
     @PostMapping
-    public ResponseEntity<ResponseDto<Void>> createProject(@RequestBody ProjectCreateDto dto) {
-        try {
-            projectService.createProject(dto);
-            return ResponseEntity.ok(ResponseDto.success(null, "Project created successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseDto.fail(e.getMessage()));
+    public ResponseEntity<ResponseDto<ProjectResponse>> createProject(
+            @RequestBody ProjectCreateDto dto,
+            Authentication authentication) {
+
+        ResponseDto<ProjectResponse> response = projectService.createProject(dto, authentication);
+
+        // Nếu fail thì trả về 400/404, không phải 200
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
         }
+
+        return ResponseEntity.ok(response);
     }
 
 
@@ -58,5 +65,11 @@ public class ProjectController {
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
         return projectService.searchProjects(name, description, page, size, sortBy, sortDir);
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<ResponseDto<ProjectDetailResponse>> getProjectDetail(
+            @PathVariable Integer id) {
+        return ResponseEntity.ok(projectService.getProjectDetail(id));
     }
 }

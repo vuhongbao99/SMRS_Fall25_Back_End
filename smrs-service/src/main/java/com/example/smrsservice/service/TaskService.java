@@ -167,5 +167,20 @@ public class TaskService {
 
         return buildTaskResponse(task);
     }
+    public PageResponse<TaskResponse> getTasksByStatus(String status, int page, int size) {
+        PageRequest pageable = PageRequest.of(page - 1, size);
+        Page<Task> taskPage = taskRepository.findByStatusIgnoreCase(status, pageable);
+
+        return PageResponse.<TaskResponse>builder()
+                .currentPages(page)
+                .pageSizes(size)
+                .totalPages(taskPage.getTotalPages())
+                .totalElements(taskPage.getTotalElements())
+                .data(taskPage.getContent()
+                        .stream()
+                        .map(this::buildTaskResponse)
+                        .toList())
+                .build();
+    }
 
 }
