@@ -1,5 +1,6 @@
 package com.example.smrsservice.service;
 
+import com.example.smrsservice.common.DecisionStatus;
 import com.example.smrsservice.common.ProjectStatus;
 import com.example.smrsservice.dto.common.ResponseDto;
 import com.example.smrsservice.dto.concil.CouncilResponse;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,27 +66,37 @@ public class CouncilService {
             council.setStatus("ACTIVE");
 
             councilRepository.save(council);
-
-            System.out.println("✅ Council created: " + council.getCouncilCode());
-
-            // Assign lecturers vào hội đồng
+            // Assign lecturers bằng email
             int assignedCount = 0;
-            if (request.getLecturerIds() != null && !request.getLecturerIds().isEmpty()) {
-                for (Integer lecturerId : request.getLecturerIds()) {
+            List<String> notFoundEmails = new ArrayList<>();
+            List<String> notLecturerEmails = new ArrayList<>();
+
+            if (request.getLecturerEmails() != null && !request.getLecturerEmails().isEmpty()) {
+                for (String email : request.getLecturerEmails()) {
                     try {
-                        Account lecturer = accountRepository.findById(lecturerId)
-                                .orElseThrow(() -> new RuntimeException("Lecturer not found: " + lecturerId));
+                        // ✅ Tìm lecturer bằng email
+                        Optional<Account> lecturerOpt = accountRepository.findByEmail(email.trim());
+
+                        if (lecturerOpt.isEmpty()) {
+                            notFoundEmails.add(email);
+                            System.out.println("⚠️ Email not found: " + email);
+                            continue;
+                        }
+
+                        Account lecturer = lecturerOpt.get();
 
                         // Kiểm tra phải là lecturer
                         if (lecturer.getRole() == null ||
                                 !"LECTURER".equalsIgnoreCase(lecturer.getRole().getRoleName())) {
-                            System.out.println("⚠️ Account " + lecturerId + " is not a lecturer, skipped");
+                            notLecturerEmails.add(email);
+                            System.out.println("⚠️ Account " + email + " is not a lecturer, skipped");
                             continue;
                         }
 
                         // Kiểm tra đã assign chưa
-                        if (councilMemberRepository.existsByCouncilIdAndLecturerId(council.getId(), lecturerId)) {
-                            System.out.println("⚠️ Lecturer " + lecturerId + " already in council, skipped");
+                        if (councilMemberRepository.existsByCouncilIdAndLecturerId(
+                                council.getId(), lecturer.getId())) {
+                            System.out.println("⚠️ Lecturer " + email + " already in council, skipped");
                             continue;
                         }
 
@@ -96,18 +109,32 @@ public class CouncilService {
                         councilMemberRepository.save(member);
                         assignedCount++;
 
-                        System.out.println("✅ Assigned lecturer: " + lecturer.getName());
+                        System.out.println("✅ Assigned lecturer: " + lecturer.getName() + " (" + email + ")");
 
                     } catch (Exception e) {
-                        System.out.println("❌ Error assigning lecturer " + lecturerId + ": " + e.getMessage());
+                        System.out.println("❌ Error assigning lecturer " + email + ": " + e.getMessage());
                     }
                 }
             }
 
             System.out.println("✅ Total lecturers assigned: " + assignedCount);
 
+            // ✅ Tạo message với thông tin chi tiết
+            StringBuilder message = new StringBuilder("Council created successfully");
+            if (assignedCount > 0) {
+                message.append(" with ").append(assignedCount).append(" member(s)");
+            }
+
+            if (!notFoundEmails.isEmpty()) {
+                message.append(". ⚠️ Email not found: ").append(String.join(", ", notFoundEmails));
+            }
+
+            if (!notLecturerEmails.isEmpty()) {
+                message.append(". ⚠️ Not lecturer accounts: ").append(String.join(", ", notLecturerEmails));
+            }
+
             CouncilResponse response = buildCouncilResponse(council);
-            return ResponseDto.success(response, "Council created successfully with " + assignedCount + " members");
+            return ResponseDto.success(response, message.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,20 +157,18 @@ public class CouncilService {
             Council council = councilRepository.findById(councilId)
                     .orElseThrow(() -> new RuntimeException("Council not found"));
 
-            // Kiểm tra đã gán chưa
             if (projectCouncilRepository.findByProjectIdAndCouncilId(projectId, councilId).isPresent()) {
                 return ResponseDto.fail("Project already assigned to this council");
             }
 
-            // Tạo assignment
+            // ✅ Tạo assignment với enum
             ProjectCouncil projectCouncil = new ProjectCouncil();
             projectCouncil.setProject(project);
             projectCouncil.setCouncil(council);
-            projectCouncil.setDecision("PENDING");
+            projectCouncil.setDecision(DecisionStatus.PENDING);  // ✅ Dùng enum
 
             projectCouncilRepository.save(projectCouncil);
 
-            // Cập nhật project status
             project.setStatus(ProjectStatus.IN_REVIEW);
             projectRepository.save(project);
 
@@ -204,44 +229,40 @@ public class CouncilService {
         try {
             Account currentUser = getCurrentAccount(authentication);
 
-            // Kiểm tra role DEAN
             if (currentUser.getRole() == null ||
                     !"DEAN".equalsIgnoreCase(currentUser.getRole().getRoleName())) {
                 return ResponseDto.fail("Only deans can make decisions");
             }
 
-            // Lấy dean profile
             CouncilManagerProfile deanProfile = councilProfileRepository
                     .findByAccountId(currentUser.getId())
                     .orElseThrow(() -> new RuntimeException("Dean profile not found"));
 
-            // Lấy project
             Project project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new RuntimeException("Project not found"));
 
-            // Tìm project council assignment
             List<ProjectCouncil> projectCouncils = projectCouncilRepository.findByProjectId(projectId);
             if (projectCouncils.isEmpty()) {
                 return ResponseDto.fail("Project is not assigned to any council");
             }
 
-            // Kiểm tra dean có quyền duyệt không (phải là dean của council được assigned)
             ProjectCouncil projectCouncil = projectCouncils.stream()
                     .filter(pc -> pc.getCouncil().getDean().getId().equals(deanProfile.getId()))
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("You are not authorized to review this project"));
 
-            // Kiểm tra đã quyết định chưa
-            if (!"PENDING".equals(projectCouncil.getDecision())) {
+            // ✅ Kiểm tra đã quyết định chưa
+            if (projectCouncil.getDecision() != DecisionStatus.PENDING) {
                 return ResponseDto.fail("Decision already made for this project: " + projectCouncil.getDecision());
             }
 
-            // Validate decision
-            if (!"APPROVED".equals(request.getDecision()) && !"REJECTED".equals(request.getDecision())) {
+            // ✅ Validate decision - SỬA LẠI ĐÚNG
+            if (request.getDecision() != DecisionStatus.APPROVED &&
+                    request.getDecision() != DecisionStatus.REJECTED) {
                 return ResponseDto.fail("Decision must be APPROVED or REJECTED");
             }
 
-            // Cập nhật decision
+            // ✅ Cập nhật decision
             projectCouncil.setDecision(request.getDecision());
             projectCouncil.setComment(request.getComment());
             projectCouncil.setDecisionDate(Instant.now());
@@ -249,8 +270,8 @@ public class CouncilService {
 
             projectCouncilRepository.save(projectCouncil);
 
-            // Cập nhật project status
-            if ("APPROVED".equals(request.getDecision())) {
+            // ✅ Cập nhật project status
+            if (request.getDecision() == DecisionStatus.APPROVED) {
                 project.setStatus(ProjectStatus.APPROVED);
                 System.out.println("✅ Project " + projectId + " APPROVED by dean " + currentUser.getName());
             } else {
