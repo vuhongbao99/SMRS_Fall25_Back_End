@@ -2,6 +2,7 @@ package com.example.smrsservice.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.example.smrsservice.dto.upload.FileUploadResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,28 +12,31 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class UploadServic {
+public class UploadService {
 
     private final Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file) {
         try {
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "folder", "smrs/images"
+                    ));
             return uploadResult.get("secure_url").toString();
         } catch (IOException e) {
             throw new RuntimeException("Lỗi upload hình ảnh lên Cloudinary", e);
         }
     }
 
+
     public String uploadFile(MultipartFile file) {
         try {
-            // Validate file
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null) {
                 throw new IllegalArgumentException("File name is required");
             }
 
-            // Kiểm tra extension
             String extension = getFileExtension(originalFilename).toLowerCase();
             if (!isAllowedFileType(extension)) {
                 throw new IllegalArgumentException(
@@ -40,10 +44,9 @@ public class UploadServic {
                 );
             }
 
-            // Upload với resource_type = "raw"
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
                     ObjectUtils.asMap(
-                            "resource_type", "raw",  // ✅ CHO PHÉP FILE
+                            "resource_type", "raw",
                             "folder", "smrs/documents",
                             "use_filename", true,
                             "unique_filename", true
@@ -56,8 +59,68 @@ public class UploadServic {
         }
     }
 
+
+    public FileUploadResponse uploadFileWithDetails(MultipartFile file) {
+        try {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null) {
+                throw new IllegalArgumentException("File name is required");
+            }
+
+            String extension = getFileExtension(originalFilename).toLowerCase();
+            if (!isAllowedFileType(extension)) {
+                throw new IllegalArgumentException(
+                        "File type not allowed. Allowed: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT"
+                );
+            }
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "raw",
+                            "folder", "smrs/documents",
+                            "use_filename", true,
+                            "unique_filename", true
+                    ));
+
+            return FileUploadResponse.builder()
+                    .url(uploadResult.get("secure_url").toString())
+                    .fileName(originalFilename)
+                    .fileType(extension)
+                    .fileSize(file.getSize())
+                    .cloudinaryId(uploadResult.get("public_id").toString())
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi upload file lên Cloudinary", e);
+        }
+    }
+
     /**
-     * ✅ THÊM: Upload tự động (image hoặc file)
+     * ✅ Upload IMAGE với FileUploadResponse
+     */
+    public FileUploadResponse uploadImageWithDetails(MultipartFile file) {
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "folder", "smrs/images"
+                    ));
+
+            return FileUploadResponse.builder()
+                    .url(uploadResult.get("secure_url").toString())
+                    .fileName(file.getOriginalFilename())
+                    .fileType(getFileExtension(file.getOriginalFilename()))
+                    .fileSize(file.getSize())
+                    .cloudinaryId(uploadResult.get("public_id").toString())
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi upload hình ảnh lên Cloudinary", e);
+        }
+    }
+
+    /**
+     * Upload tự động
      */
     public String uploadAuto(MultipartFile file) {
         String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
@@ -70,7 +133,7 @@ public class UploadServic {
     }
 
     /**
-     * ✅ THÊM: Xóa file
+     * Xóa file
      */
     public void deleteFile(String publicId, String resourceType) {
         try {
