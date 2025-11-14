@@ -61,34 +61,23 @@ public class ProjectMemberService {
             ProjectMember invitation = projectMemberRepository.findById(invitationId)
                     .orElseThrow(() -> new RuntimeException("Invitation not found"));
 
-            // Kiểm tra lời mời có phải của user hiện tại không
             if (!invitation.getAccount().getId().equals(currentUser.getId())) {
                 return ResponseDto.fail("This invitation does not belong to you");
             }
 
-            // Kiểm tra trạng thái
             if (!"Pending".equals(invitation.getStatus())) {
                 return ResponseDto.fail("This invitation has already been processed");
             }
 
-            // Kiểm tra user có đang tham gia project active nào không
-            boolean hasActiveProject = projectMemberRepository.hasActiveProject(currentUser.getId());
-            if (hasActiveProject) {
-                return ResponseDto.fail("You are already in an active project. Please complete it before joining another project.");
-            }
-
-            // Validate theo role trước khi approve
             if ("LECTURER".equalsIgnoreCase(invitation.getMemberRole())) {
-                // Kiểm tra đã có giảng viên chưa
                 Optional<ProjectMember> existingLecturer = projectMemberRepository
                         .findLecturerByProjectId(invitation.getProject().getId());
 
                 if (existingLecturer.isPresent()) {
-                    return ResponseDto.fail("This project already has a lecturer");
+                    return ResponseDto.fail("This project already has a lecturer mentor");
                 }
 
             } else if ("STUDENT".equalsIgnoreCase(invitation.getMemberRole())) {
-                // Kiểm tra số lượng sinh viên
                 long currentStudents = projectMemberRepository
                         .countByProjectIdAndMemberRoleAndStatus(
                                 invitation.getProject().getId(),
@@ -101,11 +90,9 @@ public class ProjectMemberService {
                 }
             }
 
-            // Approve lời mời
             invitation.setStatus("Approved");
             projectMemberRepository.save(invitation);
 
-            // Tạo response
             ProjectMemberResponse response = convertToResponse(invitation);
 
             return ResponseDto.success(response, "Invitation approved successfully");
@@ -126,12 +113,10 @@ public class ProjectMemberService {
             ProjectMember invitation = projectMemberRepository.findById(invitationId)
                     .orElseThrow(() -> new RuntimeException("Invitation not found"));
 
-            // Kiểm tra lời mời có phải của user hiện tại không
             if (!invitation.getAccount().getId().equals(currentUser.getId())) {
                 return ResponseDto.fail("This invitation does not belong to you");
             }
 
-            // Kiểm tra trạng thái
             if ("Cancelled".equals(invitation.getStatus())) {
                 return ResponseDto.fail("This invitation has already been cancelled");
             }
@@ -139,7 +124,6 @@ public class ProjectMemberService {
             invitation.setStatus("Cancelled");
             projectMemberRepository.save(invitation);
 
-            // Tạo response
             ProjectMemberResponse response = convertToResponse(invitation);
 
             return ResponseDto.success(response, "Invitation cancelled successfully");
@@ -170,23 +154,20 @@ public class ProjectMemberService {
     }
 
     /**
-     * Lấy project đang active của user (nếu có)
+     * Lấy tất cả active projects của user
      */
-    public ResponseDto<ProjectMemberResponse> getMyActiveProject() {
+    public ResponseDto<List<ProjectMemberResponse>> getMyActiveProjects() {
         try {
             Account currentUser = getCurrentAccount();
 
             List<ProjectMember> activeProjects = projectMemberRepository
                     .findActiveProjectsByAccountId(currentUser.getId());
 
-            if (activeProjects.isEmpty()) {
-                return ResponseDto.success(null, "No active project found");
-            }
+            List<ProjectMemberResponse> responses = activeProjects.stream()
+                    .map(this::convertToResponse)
+                    .collect(Collectors.toList());
 
-            // Lấy project đầu tiên (vì chỉ có 1 project active)
-            ProjectMemberResponse response = convertToResponse(activeProjects.get(0));
-
-            return ResponseDto.success(response, "Get active project successfully");
+            return ResponseDto.success(responses, "Get active projects successfully");
         } catch (Exception e) {
             return ResponseDto.fail(e.getMessage());
         }
@@ -211,7 +192,7 @@ public class ProjectMemberService {
     }
 
     /**
-     * Mời thêm members vào project (sau khi project đã tạo)
+     * Mời thêm members vào project
      */
     @Transactional
     public ResponseDto<InviteMemberResponse> inviteMembers(
@@ -220,14 +201,11 @@ public class ProjectMemberService {
             Authentication authentication) {
 
         try {
-            // Lấy current user
             Account currentUser = getCurrentAccount(authentication);
 
-            // Lấy project
             Project project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new RuntimeException("Project not found"));
 
-            // Kiểm tra quyền (chỉ owner hoặc admin mới được mời)
             boolean isOwner = project.getOwner().getId().equals(currentUser.getId());
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()));
@@ -236,12 +214,10 @@ public class ProjectMemberService {
                 return ResponseDto.fail("Only project owner or admin can invite members");
             }
 
-            // Lists để track kết quả
             List<String> successEmails = new ArrayList<>();
             List<String> failedEmails = new ArrayList<>();
             List<String> failedReasons = new ArrayList<>();
 
-            // Đếm số lượng hiện tại
             long currentLecturers = projectMemberRepository.countByProjectIdAndMemberRoleAndStatus(
                     projectId, "LECTURER", "Approved");
             long currentStudents = projectMemberRepository.countByProjectIdAndMemberRoleAndStatus(
@@ -250,12 +226,10 @@ public class ProjectMemberService {
             int lecturerCount = 0;
             int studentCount = 0;
 
-            // Duyệt từng email
             for (String email : emails) {
                 String trimmedEmail = email.trim();
 
                 try {
-                    // Tìm account
                     Account invitedAccount = accountRepository.findByEmail(trimmedEmail)
                             .orElse(null);
 
@@ -265,29 +239,18 @@ public class ProjectMemberService {
                         continue;
                     }
 
-                    // Không mời owner
                     if (invitedAccount.getId().equals(project.getOwner().getId())) {
                         failedEmails.add(trimmedEmail);
                         failedReasons.add(trimmedEmail + ": Cannot invite project owner");
                         continue;
                     }
 
-                    // Kiểm tra role
                     if (invitedAccount.getRole() == null) {
                         failedEmails.add(trimmedEmail);
                         failedReasons.add(trimmedEmail + ": Account has no role");
                         continue;
                     }
 
-                    // Kiểm tra đã tham gia project active khác chưa
-                    boolean hasActiveProject = projectMemberRepository.hasActiveProject(invitedAccount.getId());
-                    if (hasActiveProject) {
-                        failedEmails.add(trimmedEmail);
-                        failedReasons.add(trimmedEmail + ": Already in another active project");
-                        continue;
-                    }
-
-                    // Kiểm tra đã được mời chưa
                     boolean alreadyInvited = projectMemberRepository
                             .existsByProjectIdAndAccountId(projectId, invitedAccount.getId());
                     if (alreadyInvited) {
@@ -298,11 +261,10 @@ public class ProjectMemberService {
 
                     String roleName = invitedAccount.getRole().getRoleName();
 
-                    // Validate theo role
                     if ("LECTURER".equalsIgnoreCase(roleName)) {
                         if (currentLecturers > 0 || lecturerCount > 0) {
                             failedEmails.add(trimmedEmail);
-                            failedReasons.add(trimmedEmail + ": Project already has a lecturer");
+                            failedReasons.add(trimmedEmail + ": Project already has a lecturer mentor");
                             continue;
                         }
                         lecturerCount++;
@@ -321,7 +283,6 @@ public class ProjectMemberService {
                         continue;
                     }
 
-                    // Tạo invitation
                     ProjectMember member = new ProjectMember();
                     member.setProject(project);
                     member.setAccount(invitedAccount);
@@ -329,17 +290,20 @@ public class ProjectMemberService {
                     member.setMemberRole(roleName.toUpperCase());
                     projectMemberRepository.save(member);
 
-                    // Gửi email
+                    String invitationToken = generateInvitationToken(member.getId());
+
                     try {
                         mailService.sendProjectInvitation(
                                 invitedAccount.getEmail(),
                                 invitedAccount.getName(),
                                 project.getName(),
                                 currentUser.getName(),
-                                roleName.toUpperCase()
+                                roleName.toUpperCase(),
+                                member.getId(),
+                                invitationToken
                         );
                     } catch (Exception emailEx) {
-                        System.err.println("Failed to send email to " + trimmedEmail + ": " + emailEx.getMessage());
+                        System.err.println("Failed to send email to " + invitedAccount.getEmail() + ": " + emailEx.getMessage());
                     }
 
                     successEmails.add(trimmedEmail);
@@ -350,7 +314,6 @@ public class ProjectMemberService {
                 }
             }
 
-            // Build response
             InviteMemberResponse response = InviteMemberResponse.builder()
                     .totalInvited(emails.size())
                     .successCount(successEmails.size())
@@ -374,7 +337,7 @@ public class ProjectMemberService {
     }
 
     /**
-     * Remove member khỏi project (Owner/Admin only)
+     * Remove member khỏi project
      */
     @Transactional
     public ResponseDto<String> removeMember(Integer projectId, Integer memberId, Authentication authentication) {
@@ -384,7 +347,6 @@ public class ProjectMemberService {
             Project project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new RuntimeException("Project not found"));
 
-            // Kiểm tra quyền (chỉ owner hoặc admin)
             boolean isOwner = project.getOwner().getId().equals(currentUser.getId());
             boolean isAdmin = authentication.getAuthorities().stream()
                     .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()));
@@ -396,12 +358,10 @@ public class ProjectMemberService {
             ProjectMember member = projectMemberRepository.findById(memberId)
                     .orElseThrow(() -> new RuntimeException("Member not found"));
 
-            // Không thể xóa owner
             if (member.getAccount().getId().equals(project.getOwner().getId())) {
                 return ResponseDto.fail("Cannot remove project owner");
             }
 
-            // Kiểm tra member có thuộc project không
             if (!member.getProject().getId().equals(projectId)) {
                 return ResponseDto.fail("Member does not belong to this project");
             }
@@ -416,8 +376,130 @@ public class ProjectMemberService {
     }
 
     /**
-     * Convert ProjectMember entity to Response DTO
+     * Accept invitation từ email
      */
+    @Transactional
+    public ResponseDto<ProjectMemberResponse> acceptInvitationFromEmail(
+            Integer invitationId,
+            String token) {
+        try {
+            if (!verifyInvitationToken(invitationId, token)) {
+                return ResponseDto.fail("Invalid or expired invitation link");
+            }
+
+            ProjectMember invitation = projectMemberRepository.findById(invitationId)
+                    .orElseThrow(() -> new RuntimeException("Invitation not found"));
+
+            if (!"Pending".equals(invitation.getStatus())) {
+                return ResponseDto.fail("This invitation has already been processed");
+            }
+
+            if ("LECTURER".equalsIgnoreCase(invitation.getMemberRole())) {
+                Optional<ProjectMember> existingLecturer = projectMemberRepository
+                        .findLecturerByProjectId(invitation.getProject().getId());
+
+                if (existingLecturer.isPresent()) {
+                    return ResponseDto.fail("This project already has a lecturer mentor");
+                }
+
+            } else if ("STUDENT".equalsIgnoreCase(invitation.getMemberRole())) {
+                long currentStudents = projectMemberRepository
+                        .countByProjectIdAndMemberRoleAndStatus(
+                                invitation.getProject().getId(),
+                                "STUDENT",
+                                "Approved"
+                        );
+
+                if (currentStudents >= MAX_STUDENTS_PER_PROJECT) {
+                    return ResponseDto.fail("Maximum students reached");
+                }
+            }
+
+            invitation.setStatus("Approved");
+            projectMemberRepository.save(invitation);
+
+            ProjectMemberResponse response = convertToResponse(invitation);
+
+            return ResponseDto.success(response, "Invitation accepted successfully");
+
+        } catch (Exception e) {
+            return ResponseDto.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * Reject invitation từ email
+     */
+    @Transactional
+    public ResponseDto<ProjectMemberResponse> rejectInvitationFromEmail(
+            Integer invitationId,
+            String token) {
+        try {
+            if (!verifyInvitationToken(invitationId, token)) {
+                return ResponseDto.fail("Invalid or expired invitation link");
+            }
+
+            ProjectMember invitation = projectMemberRepository.findById(invitationId)
+                    .orElseThrow(() -> new RuntimeException("Invitation not found"));
+
+            if ("Cancelled".equals(invitation.getStatus())) {
+                return ResponseDto.fail("This invitation has already been cancelled");
+            }
+
+            invitation.setStatus("Cancelled");
+            projectMemberRepository.save(invitation);
+
+            ProjectMemberResponse response = convertToResponse(invitation);
+
+            return ResponseDto.success(response, "Invitation rejected successfully");
+
+        } catch (Exception e) {
+            return ResponseDto.fail(e.getMessage());
+        }
+    }
+
+    private String generateInvitationToken(Integer invitationId) {
+        String secretKey = "smrs-invitation-secret-key-2025";
+        long timestamp = System.currentTimeMillis();
+        String data = invitationId + ":" + secretKey + ":" + timestamp;
+
+        return java.util.Base64.getEncoder()
+                .encodeToString(data.getBytes());
+    }
+
+    private boolean verifyInvitationToken(Integer invitationId, String token) {
+        try {
+            String decoded = new String(java.util.Base64.getDecoder().decode(token));
+            String[] parts = decoded.split(":");
+
+            if (parts.length != 3) {
+                return false;
+            }
+
+            Integer tokenInvitationId = Integer.parseInt(parts[0]);
+            String tokenSecret = parts[1];
+            long timestamp = Long.parseLong(parts[2]);
+
+            if (!tokenInvitationId.equals(invitationId)) {
+                return false;
+            }
+
+            if (!"smrs-invitation-secret-key-2025".equals(tokenSecret)) {
+                return false;
+            }
+
+            long sevenDaysInMs = 7L * 24 * 60 * 60 * 1000;
+            if (System.currentTimeMillis() - timestamp > sevenDaysInMs) {
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private ProjectMemberResponse convertToResponse(ProjectMember member) {
         return ProjectMemberResponse.builder()
                 .id(member.getId())
@@ -435,9 +517,6 @@ public class ProjectMemberService {
                 .build();
     }
 
-    /**
-     * Get current authenticated user
-     */
     private Account getCurrentAccount() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
@@ -459,9 +538,6 @@ public class ProjectMemberService {
         throw new RuntimeException("Invalid authentication principal");
     }
 
-    /**
-     * Get current authenticated user from Authentication parameter
-     */
     private Account getCurrentAccount(Authentication authentication) {
         if (authentication == null) {
             throw new RuntimeException("User not authenticated");
