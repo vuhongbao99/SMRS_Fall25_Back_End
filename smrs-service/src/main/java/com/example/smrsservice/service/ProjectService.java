@@ -5,10 +5,13 @@ import com.example.smrsservice.dto.common.ResponseDto;
 import com.example.smrsservice.dto.project.*;
 import com.example.smrsservice.entity.*;
 import com.example.smrsservice.repository.AccountRepository;
+import com.example.smrsservice.repository.MajorRepository;
 import com.example.smrsservice.repository.ProjectMemberRepository;
 import com.example.smrsservice.repository.ProjectRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +22,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +39,7 @@ public class ProjectService {
     private final AccountRepository accountRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final MailService mailService;
+    private final MajorRepository majorRepository;
 
     private static final int MAX_STUDENTS_PER_PROJECT = 5;
 
@@ -72,7 +80,9 @@ public class ProjectService {
             String name,
             ProjectStatus status,
             Integer ownerId,
-            Integer majorId) {
+            Integer majorId,
+            Boolean isMine,
+            Authentication authentication) {
 
         Set<String> allowed = Set.of("id", "name", "type", "dueDate", "description", "createDate");
         String by = allowed.contains(sortBy) ? sortBy : "id";
@@ -85,21 +95,91 @@ public class ProjectService {
 
         Page<Project> result;
 
-        boolean hasName = StringUtils.hasText(name);
-        boolean hasStatus = (status != null);
-        boolean hasOwner = (ownerId != null);
-        boolean hasMajor = (majorId != null);
+        // ✅ NẾU isMine = true → Filter projects mà user tham gia
+        if (Boolean.TRUE.equals(isMine)) {
+            Account currentUser = currentAccount(authentication);
 
-        if (!hasName && !hasStatus && !hasOwner && !hasMajor) {
-            result = projectRepository.findAll(pageable);
-        } else {
+            // Lấy tất cả project IDs mà user tham gia (owner hoặc member)
+            Set<Integer> projectIds = getMyProjectIds(currentUser.getId());
+
+            if (projectIds.isEmpty()) {
+                return Page.empty(pageable);
+            }
+
+            // Build specification với projectIds + các filter khác
             result = projectRepository.findAll(
-                    buildSpecification(name, status, ownerId, majorId),
+                    buildMyProjectsSpecification(projectIds, name, status),
                     pageable
             );
+        } else {
+            // Logic cũ - không đổi
+            boolean hasName = StringUtils.hasText(name);
+            boolean hasStatus = (status != null);
+            boolean hasOwner = (ownerId != null);
+            boolean hasMajor = (majorId != null);
+
+            if (!hasName && !hasStatus && !hasOwner && !hasMajor) {
+                result = projectRepository.findAll(pageable);
+            } else {
+                result = projectRepository.findAll(
+                        buildSpecification(name, status, ownerId, majorId),
+                        pageable
+                );
+            }
         }
 
         return result.map(this::toResponse);
+    }
+
+    // ✅ Helper method: Lấy tất cả project IDs mà user tham gia
+    private Set<Integer> getMyProjectIds(Integer userId) {
+        Set<Integer> projectIds = new HashSet<>();
+
+        // 1. Projects mà user là OWNER
+        List<Project> ownedProjects = projectRepository.findByOwnerId(userId);
+        projectIds.addAll(ownedProjects.stream()
+                .map(Project::getId)
+                .collect(Collectors.toSet()));
+
+        // 2. Projects mà user là MEMBER hoặc MENTOR (bất kể status)
+        List<ProjectMember> memberProjects = projectMemberRepository.findByAccountId(userId);
+        projectIds.addAll(memberProjects.stream()
+                .map(pm -> pm.getProject().getId())
+                .collect(Collectors.toSet()));
+
+        return projectIds;
+    }
+
+    // ✅ Specification cho my projects
+    private Specification<Project> buildMyProjectsSpecification(
+            Set<Integer> projectIds,
+            String name,
+            ProjectStatus status) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Filter theo projectIds
+            predicates.add(root.get("id").in(projectIds));
+
+            // Filter theo name nếu có
+            if (StringUtils.hasText(name)) {
+                predicates.add(
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("name")),
+                                "%" + name.toLowerCase() + "%"
+                        )
+                );
+            }
+
+            // Filter theo status nếu có
+            if (status != null) {
+                predicates.add(
+                        criteriaBuilder.equal(root.get("status"), status)
+                );
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     private Specification<Project> buildSpecification(
@@ -136,8 +216,6 @@ public class ProjectService {
                 );
             }
 
-
-
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -163,6 +241,12 @@ public class ProjectService {
             project.setDueDate(dto.getDueDate());
             project.setOwner(owner);
             project.setStatus(ProjectStatus.PENDING);
+
+            if (dto.getMajorId() != null) {
+                Major major = majorRepository.findById(Long.valueOf(dto.getMajorId()))
+                        .orElseThrow(() -> new RuntimeException("Major not found"));
+                project.setMajor(major);
+            }
 
             if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
                 for (ProjectCreateDto.FileDto f : dto.getFiles()) {
@@ -372,6 +456,8 @@ public class ProjectService {
                 .ownerEmail(p.getOwner() != null ? p.getOwner().getEmail() : null)
                 .ownerRole(p.getOwner() != null && p.getOwner().getRole() != null ? p.getOwner().getRole().getRoleName() : null)
                 .status(p.getStatus())
+                .majorId(p.getMajor() != null ? p.getMajor().getId() : null)
+                .majorName(p.getMajor() != null ? p.getMajor().getName() : null)
                 .createdAt(createdAt)
                 .files(files)
                 .images(images)
@@ -500,6 +586,7 @@ public class ProjectService {
             return ResponseDto.fail(e.getMessage());
         }
     }
+
     @Transactional
     public ResponseDto<ProjectResponse> pickArchivedProject(
             Integer projectId,
@@ -555,5 +642,113 @@ public class ProjectService {
             e.printStackTrace();
             return ResponseDto.fail(e.getMessage());
         }
+    }
+
+    @Transactional
+    public ResponseDto<List<Project>> importProjectsFromExcel(MultipartFile file, Authentication authentication) {
+        List<Project> projects = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+
+            Account currentUser = currentAccount(authentication);
+
+            // Đọc header row
+            Map<String, Integer> headerMap = new HashMap<>();
+            if (rows.hasNext()) {
+                Row headerRow = rows.next();
+                for (Cell cell : headerRow) {
+                    String columnName = cell.getStringCellValue().trim().toLowerCase();
+                    headerMap.put(columnName, cell.getColumnIndex());
+                }
+            }
+
+            // Kiểm tra các cột bắt buộc
+            if (!headerMap.containsKey("name")) {
+                throw new RuntimeException("Missing required column: name");
+            }
+
+            // Đọc data rows
+            while (rows.hasNext()) {
+                Row row = rows.next();
+
+                String name = getCellValue(row.getCell(headerMap.get("name")));
+                if (name == null || name.isBlank()) continue;
+
+                Project project = new Project();
+                project.setName(name);
+                project.setOwner(currentUser);
+                project.setStatus(ProjectStatus.PENDING);
+                project.setCreateDate(new Date());
+
+                // Description
+                if (headerMap.containsKey("description")) {
+                    project.setDescription(getCellValue(row.getCell(headerMap.get("description"))));
+                }
+
+                // Type
+                if (headerMap.containsKey("type")) {
+                    project.setType(getCellValue(row.getCell(headerMap.get("type"))));
+                }
+
+                // Due Date
+                if (headerMap.containsKey("duedate")) {
+                    Cell dueDateCell = row.getCell(headerMap.get("duedate"));
+                    if (dueDateCell != null && dueDateCell.getCellType() == CellType.NUMERIC) {
+                        Date dueDate = dueDateCell.getDateCellValue();
+                        project.setDueDate(dueDate);
+                    } else {
+                        String dueDateStr = getCellValue(dueDateCell);
+                        if (!dueDateStr.isEmpty()) {
+                            try {
+                                LocalDateTime ldt = LocalDateTime.parse(dueDateStr + "T00:00:00");
+                                project.setDueDate(Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant()));
+                            } catch (Exception e) {
+                                System.err.println("Invalid date format: " + dueDateStr);
+                            }
+                        }
+                    }
+                }
+
+                // Major
+                if (headerMap.containsKey("major")) {
+                    String majorName = getCellValue(row.getCell(headerMap.get("major")));
+                    if (!majorName.isEmpty()) {
+                        Optional<Major> majorOpt = majorRepository.findByName(majorName);
+                        majorOpt.ifPresent(project::setMajor);
+                    }
+                }
+
+                // Status
+                if (headerMap.containsKey("status")) {
+                    String statusStr = getCellValue(row.getCell(headerMap.get("status"))).toUpperCase();
+                    try {
+                        ProjectStatus status = ProjectStatus.valueOf(statusStr);
+                        project.setStatus(status);
+                    } catch (Exception e) {
+                        project.setStatus(ProjectStatus.PENDING);
+                    }
+                }
+
+                projects.add(project);
+            }
+
+            projectRepository.saveAll(projects);
+
+            return ResponseDto.success(projects, "Imported " + projects.size() + " projects successfully");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseDto.fail("Lỗi khi đọc file Excel: " + e.getMessage());
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        if (cell.getCellType() == CellType.STRING) return cell.getStringCellValue().trim();
+        if (cell.getCellType() == CellType.NUMERIC)
+            return String.valueOf((int) cell.getNumericCellValue());
+        return "";
     }
 }
