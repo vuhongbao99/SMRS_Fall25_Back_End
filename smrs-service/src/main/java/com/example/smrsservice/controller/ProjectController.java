@@ -2,17 +2,17 @@ package com.example.smrsservice.controller;
 
 import com.example.smrsservice.common.ProjectStatus;
 import com.example.smrsservice.dto.common.ResponseDto;
-import com.example.smrsservice.dto.project.PickProjectRequest;
-import com.example.smrsservice.dto.project.ProjectCreateDto;
-import com.example.smrsservice.dto.project.ProjectDetailResponse;
-import com.example.smrsservice.dto.project.ProjectResponse;
-import com.example.smrsservice.dto.project.UpdateProjectStatusRequest;
+import com.example.smrsservice.dto.project.*;
+import com.example.smrsservice.entity.Project;
 import com.example.smrsservice.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -38,8 +38,12 @@ public class ProjectController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) ProjectStatus status,
             @RequestParam(required = false) Integer ownerId,
-            @RequestParam(required = false) Integer majorId) {
-        return projectService.getAllProjects(page, size, sortBy, sortDir, name, status, ownerId, majorId);
+            @RequestParam(required = false) Integer majorId,
+            @RequestParam(required = false, defaultValue = "false") Boolean isMine,
+            Authentication authentication) {
+
+        return projectService.getAllProjects(
+                page, size, sortBy, sortDir, name, status, ownerId, majorId, isMine, authentication);
     }
 
     @PostMapping
@@ -80,5 +84,14 @@ public class ProjectController {
     public ResponseEntity<ResponseDto<ProjectDetailResponse>> getProjectDetail(
             @PathVariable Integer id) {
         return ResponseEntity.ok(projectService.getProjectDetail(id));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<ResponseDto<List<Project>>> importProjects(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        ResponseDto<List<Project>> response = projectService.importProjectsFromExcel(file, authentication);
+        return ResponseEntity.ok(response);
     }
 }

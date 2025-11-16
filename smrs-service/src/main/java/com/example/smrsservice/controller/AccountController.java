@@ -1,4 +1,5 @@
 package com.example.smrsservice.controller;
+
 import com.example.smrsservice.dto.account.*;
 import com.example.smrsservice.dto.auth.LoginRequest;
 import com.example.smrsservice.dto.auth.LoginResponseDto;
@@ -79,9 +80,14 @@ public class AccountController {
         accountService.deleteAccount(id);
     }
 
-    @PutMapping("/update/{id}")
-    AccountDetailResponse updateAccountById(@PathVariable Integer id, @RequestBody UpdateAccountDto request) {
-        return accountService.updateAccount(id,request);
+    /**
+     * ✅ FIXED: Update account không cần {id}, lấy từ token
+     */
+    @PutMapping("/update")
+    public ResponseDto<AccountDetailResponse> updateAccount(
+            @RequestBody UpdateAccountDto request,
+            Authentication authentication) {
+        return accountService.updateAccount(request, authentication);
     }
 
     @GetMapping("/me")
@@ -102,5 +108,4 @@ public class AccountController {
         accountService.changePassword(req, auth);
         return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
-
 }
