@@ -445,4 +445,47 @@ public class CouncilService {
 
         throw new RuntimeException("Invalid authentication principal");
     }
+
+    /**
+     * API cho giảng viên xem các hội đồng mà mình là thành viên
+     */
+    public ResponseDto<List<CouncilResponse>> getMyJoinedCouncils(Authentication authentication) {
+        try {
+            Account currentUser = getCurrentAccount(authentication);
+
+            if (!"LECTURER".equalsIgnoreCase(currentUser.getRole().getRoleName())) {
+                return ResponseDto.fail("Only lecturers can access this endpoint");
+            }
+
+            // Tìm các council mà lecturer này là member
+            List<CouncilMember> myMemberships = councilMemberRepository
+                    .findByLecturerId(currentUser.getId());
+
+            if (myMemberships.isEmpty()) {
+                return ResponseDto.success(new ArrayList<>(),
+                        "You are not a member of any council");
+            }
+
+            System.out.println("✅ Found " + myMemberships.size() +
+                    " council membership(s) for lecturer " + currentUser.getName());
+
+            List<CouncilResponse> responses = myMemberships.stream()
+                    .map(cm -> {
+                        Council council = cm.getCouncil();
+                        CouncilResponse response = buildCouncilResponse(council);
+
+                        // Thêm thông tin về role của mình trong hội đồng này
+                        // (Có thể extend CouncilResponse để thêm field myRole nếu cần)
+                        return response;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseDto.success(responses,
+                    "Found " + responses.size() + " council(s)");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseDto.fail(e.getMessage());
+        }
+    }
 }
