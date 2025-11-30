@@ -1,16 +1,13 @@
 package com.example.smrsservice.controller;
 
-
+import com.example.smrsservice.dto.common.PaginatedResponseDto;
 import com.example.smrsservice.dto.common.ResponseDto;
 import com.example.smrsservice.dto.stats.admin.*;
 import com.example.smrsservice.service.AdminStatsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/stats/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")  // ✅ ĐỔI SANG hasAuthority
 public class AdminStatsController {
 
     private final AdminStatsService adminStatsService;
@@ -57,10 +54,11 @@ public class AdminStatsController {
     }
 
     @GetMapping("/recent-activities")
-    public ResponseEntity<ResponseDto<List<ActivityDto>>> getRecentActivities(
+    public ResponseEntity<PaginatedResponseDto<List<ActivityDto>>> getRecentActivities(
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        List<ActivityDto> data = adminStatsService.getRecentActivities(limit);
-        return ResponseEntity.ok(ResponseDto.success(data, "Success"));
+        PaginatedResponseDto<List<ActivityDto>> response = adminStatsService.getRecentActivities(page, limit);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/system-health")
