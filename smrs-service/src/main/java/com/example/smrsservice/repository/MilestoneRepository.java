@@ -1,6 +1,5 @@
 package com.example.smrsservice.repository;
 
-
 import com.example.smrsservice.entity.Milestone;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,13 +11,25 @@ import java.util.Optional;
 
 @Repository
 public interface MilestoneRepository extends JpaRepository<Milestone, Integer> {
+
     List<Milestone> findByProject_Id(Integer projectId);
 
     boolean existsByProjectIdAndIsFinalTrue(Integer projectId);
 
-    Optional<Milestone> findByProjectIdAndIsFinalTrue(Integer projectId);
+    // ✅ SỬA: Dùng native query với LIMIT 1
+    @Query(value = "SELECT * FROM milestone WHERE project_id = :projectId AND is_final = :isFinal ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<Milestone> findFirstByProjectIdAndIsFinalOrderByIdDesc(
+            @Param("projectId") Integer projectId,
+            @Param("isFinal") Boolean isFinal
+    );
 
-    Optional<Milestone> findByProjectIdAndIsFinal(Integer projectId, Boolean isFinal);
+    @Query(value = "SELECT * FROM milestone WHERE project_id = :projectId AND is_final = :isFinal ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<Milestone> findByProjectIdAndIsFinal(
+            @Param("projectId") Integer projectId,
+            @Param("isFinal") Boolean isFinal
+    );
+
+    List<Milestone> findAllByProjectIdAndIsFinal(Integer projectId, Boolean isFinal);
 
     List<Milestone> findByIsFinalAndStatus(Boolean isFinal, String status);
 
