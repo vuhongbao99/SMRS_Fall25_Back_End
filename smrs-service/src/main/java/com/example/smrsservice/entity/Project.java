@@ -36,7 +36,7 @@ public class Project {
 
     // ⭐ FIX 1: KHÔNG SET DEFAULT - Service sẽ set
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", length = 50, nullable = false)
     private ProjectStatus status;  // ✅ Không có default value
 
     @Column(name = "create_date", nullable = false, updatable = false)
@@ -89,6 +89,9 @@ public class Project {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "major_id")
     private Major major;
+
+    @Column(name = "is_created_by_dean")
+    private Boolean isCreatedByDean;
 
     // ✅ HELPER METHODS
     public void addFile(ProjectFile file) {
