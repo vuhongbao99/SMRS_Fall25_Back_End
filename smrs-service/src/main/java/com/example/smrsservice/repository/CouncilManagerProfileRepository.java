@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface CouncilManagerProfileRepository extends JpaRepository<CouncilManagerProfile,Integer> {
+public interface    CouncilManagerProfileRepository extends JpaRepository<CouncilManagerProfile,Integer> {
     Optional<CouncilManagerProfile> findByAccountId(Integer accountId);
 
     Optional<CouncilManagerProfile> findByEmployeeCode(String employeeCode);
